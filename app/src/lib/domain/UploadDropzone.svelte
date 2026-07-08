@@ -28,11 +28,18 @@
 	class:dragging
 	role="button"
 	tabindex="0"
-	ondragover={(e) => { e.preventDefault(); dragging = true; }}
-	ondragleave={() => { dragging = false; }}
+	ondragover={(e) => {
+		e.preventDefault();
+		dragging = true;
+	}}
+	ondragleave={() => {
+		dragging = false;
+	}}
 	ondrop={onDrop}
 	onclick={() => inputEl?.click()}
-	onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputEl?.click(); }}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') inputEl?.click();
+	}}
 >
 	<input bind:this={inputEl} type="file" {accept} onchange={onPick} class="sr-only" />
 
@@ -43,9 +50,12 @@
 			<button
 				type="button"
 				class="remove-btn focus-glass"
-				onclick={(e) => { e.stopPropagation(); clear(); }}
-				aria-label="Remove file"
-			>×</button>
+				onclick={(e) => {
+					e.stopPropagation();
+					clear();
+				}}
+				aria-label="Remove file">×</button
+			>
 		</div>
 	{:else}
 		<p class="zone-label">{label}</p>
@@ -60,9 +70,12 @@
 		padding: 1.5rem;
 		text-align: center;
 		cursor: pointer;
-		transition: border-color 160ms var(--ease-glass), background-color 160ms var(--ease-glass);
+		transition:
+			border-color 160ms var(--ease-glass),
+			background-color 160ms var(--ease-glass);
 	}
-	.zone:hover, .zone.dragging {
+	.zone:hover,
+	.zone.dragging {
 		border-color: var(--color-glass-border-bright);
 		background: var(--color-glass-tint);
 	}

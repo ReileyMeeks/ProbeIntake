@@ -43,9 +43,7 @@
 
 	// `flat` is a legacy shorthand from before the refraction prop existed.
 	// `opaque` implies no refraction — content-heavy surfaces shouldn't ripple.
-	const effectiveRefraction = $derived(
-		flat || opaque ? 'none' : refraction
-	);
+	const effectiveRefraction = $derived(flat || opaque ? 'none' : refraction);
 
 	// Feature-detect once at mount. Refraction stays off during SSR so the
 	// initial paint matches the post-hydration render (no flash).
@@ -98,7 +96,8 @@
 		width: 100%;
 	}
 
-	div, button {
+	div,
+	button {
 		padding: 1.5rem;
 	}
 </style>

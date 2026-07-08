@@ -2,7 +2,13 @@
 	import GlassCard from '$lib/glass/GlassCard.svelte';
 	import GlassInput from '$lib/glass/GlassInput.svelte';
 	import TierTree from './TierTree.svelte';
-	import { buildTierTree, filterRows, allFlags, rankedImpactToLeafNode, type TreeFilters } from './tree';
+	import {
+		buildTierTree,
+		filterRows,
+		allFlags,
+		rankedImpactToLeafNode,
+		type TreeFilters
+	} from './tree';
 	import type { RankedImpact } from './types';
 	import type { TreeNode } from './tree';
 
@@ -45,9 +51,16 @@
 	const fmtUsd = (n: number | null) =>
 		n === null
 			? '—'
-			: n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+			: n.toLocaleString(undefined, {
+					style: 'currency',
+					currency: 'USD',
+					maximumFractionDigits: 0
+				});
 
-	function delta(m25: number | null, m26: number | null): { text: string; dir: 'down' | 'up' | 'flat' } {
+	function delta(
+		m25: number | null,
+		m26: number | null
+	): { text: string; dir: 'down' | 'up' | 'flat' } {
 		if (m25 === null || m26 === null) return { text: '—', dir: 'flat' };
 		const d = (m26 - m25) * 100;
 		if (Math.abs(d) < 0.05) return { text: '0.0 pp', dir: 'flat' };
@@ -69,11 +82,24 @@
 <GlassCard refraction="none">
 	<div class="card-inner">
 		<div class="filter-row">
-			<GlassInput bind:value={filter} type="search" placeholder="Filter combos…" class="filter-sm" />
+			<GlassInput
+				bind:value={filter}
+				type="search"
+				placeholder="Filter combos…"
+				class="filter-sm"
+			/>
 			{#if !contextMode}
 				<div class="mode-toggle" role="group" aria-label="View mode">
-					<button class:active={mode === 'flat'} aria-pressed={mode === 'flat'} onclick={() => (mode = 'flat')}>Flat</button>
-					<button class:active={mode === 'tree'} aria-pressed={mode === 'tree'} onclick={() => (mode = 'tree')}>Tree</button>
+					<button
+						class:active={mode === 'flat'}
+						aria-pressed={mode === 'flat'}
+						onclick={() => (mode = 'flat')}>Flat</button
+					>
+					<button
+						class:active={mode === 'tree'}
+						aria-pressed={mode === 'tree'}
+						onclick={() => (mode = 'tree')}>Tree</button
+					>
 				</div>
 			{/if}
 			<label class="switch">
@@ -88,14 +114,26 @@
 			{#if flagOptions.length}
 				<div class="flags">
 					{#each flagOptions as f}
-						<button class="flag-pill" class:on={selectedFlags.includes(f)} aria-pressed={selectedFlags.includes(f)} onclick={() => toggleFlag(f)}>{f}</button>
+						<button
+							class="flag-pill"
+							class:on={selectedFlags.includes(f)}
+							aria-pressed={selectedFlags.includes(f)}
+							onclick={() => toggleFlag(f)}>{f}</button
+						>
 					{/each}
 				</div>
 			{/if}
 		</div>
 
 		{#if effectiveMode === 'tree'}
-			<TierTree nodes={tree} onSelect={pick} {selectedPath} {analysisId} {hasExport2} {contextMode} />
+			<TierTree
+				nodes={tree}
+				onSelect={pick}
+				{selectedPath}
+				{analysisId}
+				{hasExport2}
+				{contextMode}
+			/>
 		{:else}
 			<div class="col-headers">
 				<span class="ch ch-combo">Combo</span>
@@ -108,7 +146,11 @@
 				{#each filtered as r, i}
 					{@const d = delta(r.margin_pct_2025, r.margin_pct_2026)}
 					{#if i > 0}<div class="row-divider"></div>{/if}
-					<button class="impact-row" class:selected={selectedPath === r.combo.join('|')} onclick={() => pick(rankedImpactToLeafNode(r))}>
+					<button
+						class="impact-row"
+						class:selected={selectedPath === r.combo.join('|')}
+						onclick={() => pick(rankedImpactToLeafNode(r))}
+					>
 						<span class="cell cell-combo" title={r.combo.join(' / ')}>{r.combo.join(' / ')}</span>
 						<span class="cell cell-margin">
 							<span class="m25">{fmtPct(r.margin_pct_2025)}</span>
@@ -119,7 +161,9 @@
 							{d.text}
 						</span>
 						<span class="cell cell-rev">{fmtUsd(r.rev_2026)}</span>
-						<span class="cell cell-impact" class:deterioration={(r.impact_usd ?? 0) > 0}>{fmtUsd(r.impact_usd === null ? null : -r.impact_usd)}</span>
+						<span class="cell cell-impact" class:deterioration={(r.impact_usd ?? 0) > 0}
+							>{fmtUsd(r.impact_usd === null ? null : -r.impact_usd)}</span
+						>
 					</button>
 				{/each}
 			</div>
@@ -147,21 +191,108 @@
 		padding: 0.4375rem 0.75rem !important;
 		border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent) !important;
 	}
-	.mode-toggle { display: inline-flex; border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent); border-radius: 0.5rem; overflow: hidden; }
-	.mode-toggle button { appearance: none; border: 0; background: transparent; color: var(--color-page-fg-muted); font: inherit; font-size: 0.8125rem; padding: 0.3rem 0.7rem; cursor: pointer; }
-	.mode-toggle button.active { background: color-mix(in srgb, var(--color-page-fg) 12%, transparent); color: var(--color-page-fg); }
-	.num { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8125rem; color: var(--color-page-fg-muted); }
-	.num input { width: 6rem; font: inherit; font-size: 0.8125rem; padding: 0.25rem 0.4rem; border-radius: 0.4rem; border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent); background: transparent; color: inherit; }
-	.switch { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8125rem; color: var(--color-page-fg-muted); cursor: pointer; }
-	.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
-	.switch-track { position: relative; width: 2rem; height: 1.1rem; border-radius: 999px; background: color-mix(in srgb, var(--color-page-fg) 30%, transparent); transition: background 140ms ease; flex: none; }
-	.switch-thumb { position: absolute; top: 50%; left: 0.15rem; transform: translateY(-50%); width: 0.8rem; height: 0.8rem; border-radius: 999px; background: #fff; transition: left 140ms ease; }
-	.switch input:checked + .switch-track { background: var(--color-accent); }
-	.switch input:checked + .switch-track .switch-thumb { left: calc(100% - 0.95rem); }
-	.switch input:focus-visible + .switch-track { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-	.flags { display: inline-flex; flex-wrap: wrap; gap: 0.35rem; }
-	.flag-pill { appearance: none; border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent); background: transparent; color: var(--color-page-fg-muted); font: inherit; font-size: 0.75rem; border-radius: 999px; padding: 0.15rem 0.6rem; cursor: pointer; }
-	.flag-pill.on { background: color-mix(in srgb, var(--color-accent) 18%, transparent); color: var(--color-accent); border-color: color-mix(in srgb, var(--color-accent) 40%, transparent); }
+	.mode-toggle {
+		display: inline-flex;
+		border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent);
+		border-radius: 0.5rem;
+		overflow: hidden;
+	}
+	.mode-toggle button {
+		appearance: none;
+		border: 0;
+		background: transparent;
+		color: var(--color-page-fg-muted);
+		font: inherit;
+		font-size: 0.8125rem;
+		padding: 0.3rem 0.7rem;
+		cursor: pointer;
+	}
+	.mode-toggle button.active {
+		background: color-mix(in srgb, var(--color-page-fg) 12%, transparent);
+		color: var(--color-page-fg);
+	}
+	.num {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.8125rem;
+		color: var(--color-page-fg-muted);
+	}
+	.num input {
+		width: 6rem;
+		font: inherit;
+		font-size: 0.8125rem;
+		padding: 0.25rem 0.4rem;
+		border-radius: 0.4rem;
+		border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent);
+		background: transparent;
+		color: inherit;
+	}
+	.switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		font-size: 0.8125rem;
+		color: var(--color-page-fg-muted);
+		cursor: pointer;
+	}
+	.switch input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+	.switch-track {
+		position: relative;
+		width: 2rem;
+		height: 1.1rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--color-page-fg) 30%, transparent);
+		transition: background 140ms ease;
+		flex: none;
+	}
+	.switch-thumb {
+		position: absolute;
+		top: 50%;
+		left: 0.15rem;
+		transform: translateY(-50%);
+		width: 0.8rem;
+		height: 0.8rem;
+		border-radius: 999px;
+		background: #fff;
+		transition: left 140ms ease;
+	}
+	.switch input:checked + .switch-track {
+		background: var(--color-accent);
+	}
+	.switch input:checked + .switch-track .switch-thumb {
+		left: calc(100% - 0.95rem);
+	}
+	.switch input:focus-visible + .switch-track {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+	.flags {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	.flag-pill {
+		appearance: none;
+		border: 1px solid color-mix(in srgb, var(--color-page-fg) 22%, transparent);
+		background: transparent;
+		color: var(--color-page-fg-muted);
+		font: inherit;
+		font-size: 0.75rem;
+		border-radius: 999px;
+		padding: 0.15rem 0.6rem;
+		cursor: pointer;
+	}
+	.flag-pill.on {
+		background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+		color: var(--color-accent);
+		border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+	}
 
 	.col-headers {
 		display: grid;
@@ -177,7 +308,10 @@
 		letter-spacing: 0.04em;
 		color: var(--color-page-fg-muted);
 	}
-	.ch-margin, .ch-delta, .ch-rev, .ch-impact {
+	.ch-margin,
+	.ch-delta,
+	.ch-rev,
+	.ch-impact {
 		text-align: right;
 	}
 
@@ -285,18 +419,24 @@
 	}
 
 	@media (max-width: 720px) {
-		.col-headers, .impact-row {
+		.col-headers,
+		.impact-row {
 			grid-template-columns: minmax(0, 1fr) 5rem 6rem;
 		}
-		.ch-margin, .cell-margin, .ch-delta, .cell-delta {
+		.ch-margin,
+		.cell-margin,
+		.ch-delta,
+		.cell-delta {
 			display: none;
 		}
 	}
 	@media (max-width: 480px) {
-		.col-headers, .impact-row {
+		.col-headers,
+		.impact-row {
 			grid-template-columns: minmax(0, 1fr) 5.5rem;
 		}
-		.ch-rev, .cell-rev {
+		.ch-rev,
+		.cell-rev {
 			display: none;
 		}
 	}

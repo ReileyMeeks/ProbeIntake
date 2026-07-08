@@ -31,7 +31,11 @@
 		<h2 class="section-title">{title}</h2>
 		<div class="range-toggle">
 			{#each ranges as r (r)}
-				<GlassButton size="sm" variant={days === r ? 'prominent' : 'default'} onclick={() => setRange(r)}>
+				<GlassButton
+					size="sm"
+					variant={days === r ? 'prominent' : 'default'}
+					onclick={() => setRange(r)}
+				>
 					{r}d
 				</GlassButton>
 			{/each}

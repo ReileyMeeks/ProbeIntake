@@ -22,16 +22,12 @@
 	// Per-field resolved option set. `null` = unconstrained (use field.options or
 	// free input); `string[]` = constrained set (possibly empty when parent is
 	// unset or maps to nothing).
-	const resolvedOptions = $derived(
-		fields.map((field) => resolveDependentOptions(field, values))
-	);
+	const resolvedOptions = $derived(fields.map((field) => resolveDependentOptions(field, values)));
 
 	// Per-field visibility. Fields whose `showWhen` gate fails are not
 	// rendered. This is also what the Vapor validator uses to skip
 	// required checks — keep the JS and Swift implementations in sync.
-	const visibility = $derived(
-		fields.map((field) => shouldRender(field, values))
-	);
+	const visibility = $derived(fields.map((field) => shouldRender(field, values)));
 
 	// Cache of dynamic-options results, keyed by `${fieldKey}|${parentValue}`.
 	// Keyed by parent value so flipping `customer` from A → B → A reuses the
@@ -175,47 +171,47 @@
 			{@const resolved = resolvedOptions[i]}
 			{@const options = effectiveOptions(field, resolved)}
 			{@const disabled = isDisabled(field, resolved)}
-		<label class="dynamic-form__field">
-			<span class="dynamic-form__label">
-				{field.label ?? field.field}
-				{#if field.required}<span class="dynamic-form__required" aria-hidden="true">*</span>{/if}
-			</span>
+			<label class="dynamic-form__field">
+				<span class="dynamic-form__label">
+					{field.label ?? field.field}
+					{#if field.required}<span class="dynamic-form__required" aria-hidden="true">*</span>{/if}
+				</span>
 
-			{#if field.type === 'select'}
-				<select
-					bind:value={values[field.field]}
-					required={field.required}
-					{disabled}
-					aria-required={field.required}
-				>
-					<option value="">{selectPlaceholder(field)}</option>
-					{#each options as opt (opt.id)}
-						<option value={opt.id}>{opt.label}</option>
-					{/each}
-				</select>
-			{:else if field.type === 'textarea'}
-				<textarea
-					bind:value={values[field.field]}
-					required={field.required}
-					aria-required={field.required}
-					rows="4"
-				></textarea>
-			{:else if field.type === 'number'}
-				<input
-					type="number"
-					bind:value={values[field.field]}
-					required={field.required}
-					aria-required={field.required}
-				/>
-			{:else}
-				<input
-					type="text"
-					bind:value={values[field.field]}
-					required={field.required}
-					aria-required={field.required}
-				/>
-			{/if}
-		</label>
+				{#if field.type === 'select'}
+					<select
+						bind:value={values[field.field]}
+						required={field.required}
+						{disabled}
+						aria-required={field.required}
+					>
+						<option value="">{selectPlaceholder(field)}</option>
+						{#each options as opt (opt.id)}
+							<option value={opt.id}>{opt.label}</option>
+						{/each}
+					</select>
+				{:else if field.type === 'textarea'}
+					<textarea
+						bind:value={values[field.field]}
+						required={field.required}
+						aria-required={field.required}
+						rows="4"
+					></textarea>
+				{:else if field.type === 'number'}
+					<input
+						type="number"
+						bind:value={values[field.field]}
+						required={field.required}
+						aria-required={field.required}
+					/>
+				{:else}
+					<input
+						type="text"
+						bind:value={values[field.field]}
+						required={field.required}
+						aria-required={field.required}
+					/>
+				{/if}
+			</label>
 		{/if}
 	{/each}
 </div>

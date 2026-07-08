@@ -13,15 +13,7 @@
 		children: Snippet<[T]>;
 	}
 
-	let {
-		state,
-		isEmpty,
-		loading,
-		empty,
-		error,
-		retry,
-		children
-	}: Props = $props();
+	let { state, isEmpty, loading, empty, error, retry, children }: Props = $props();
 </script>
 
 {#if state.kind === 'idle' || state.kind === 'loading'}

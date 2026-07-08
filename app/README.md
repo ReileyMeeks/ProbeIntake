@@ -31,12 +31,14 @@ npm run dev
 ## 🛠️ Development
 
 ### Running Tests
+
 ```bash
 npm run test      # Vitest
 npm run check     # svelte-check + tsc
 ```
 
 ### Building for Production
+
 ```bash
 npm run build
 ```

@@ -49,15 +49,12 @@
 		/* Inset shadow: top-inner darkness makes the bar look recessed into the
 		   page surface rather than floating above it. */
 		--shadow-glass-md:
-			inset 0 2px 5px rgb(0 0 0 / 0.28),
-			inset 0 1px 0 rgb(255 255 255 / 0.05),
+			inset 0 2px 5px rgb(0 0 0 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.05),
 			0 0 0 1px var(--color-glass-border);
 	}
 	/* Light mode: softer inset since contrast is lower against the warm bg */
 	:global(html[data-theme='light']) .sticky-toolbar {
-		--shadow-glass-md:
-			inset 0 2px 4px rgb(0 0 0 / 0.10),
-			0 0 0 1px rgb(0 0 0 / 0.07);
+		--shadow-glass-md: inset 0 2px 4px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.07);
 	}
 	/* Softer press feedback than buttons — the toolbar isn't directly
 	   clickable so we don't want a noticeable hover state on it. */

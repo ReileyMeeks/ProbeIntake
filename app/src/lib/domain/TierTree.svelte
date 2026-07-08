@@ -31,9 +31,16 @@
 	const fmtUsd = (n: number | null) =>
 		n === null
 			? '—'
-			: n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+			: n.toLocaleString(undefined, {
+					style: 'currency',
+					currency: 'USD',
+					maximumFractionDigits: 0
+				});
 
-	function deltaPp(a: number | null, b: number | null): { text: string; dir: 'down' | 'up' | 'flat' } {
+	function deltaPp(
+		a: number | null,
+		b: number | null
+	): { text: string; dir: 'down' | 'up' | 'flat' } {
 		if (a === null || b === null) return { text: '—', dir: 'flat' };
 		const d = (b - a) * 100;
 		if (Math.abs(d) < 0.05) return { text: '0.0 pp', dir: 'flat' };
@@ -139,8 +146,8 @@
 						class="detail-btn"
 						class:active={node.path.join('|') === selectedPath}
 						onclick={() => onSelect(node)}
-						title="Provide detail"
-					>✨ Detail</button>
+						title="Provide detail">✨ Detail</button
+					>
 				{/if}
 			</div>
 			<span class="cell cell-margin">
@@ -148,18 +155,26 @@
 				<span class="arrow">→</span>
 				<span class="m26">{fmtPct(node.margin_pct_2026)}</span>
 			</span>
-			<span class="cell cell-delta" class:down={d.dir === 'down'} class:up={d.dir === 'up'}>{d.text}</span>
+			<span class="cell cell-delta" class:down={d.dir === 'down'} class:up={d.dir === 'up'}
+				>{d.text}</span
+			>
 			<span class="cell cell-rev">{fmtUsd(node.rev_2026)}</span>
-			<span class="cell cell-impact" class:deterioration={node.impact_usd > 0}>{fmtUsd(node.impact_usd)}</span>
+			<span class="cell cell-impact" class:deterioration={node.impact_usd > 0}
+				>{fmtUsd(node.impact_usd)}</span
+			>
 		</div>
 
 		{#if node.depth === 4}
 			<!-- tier-5 combo: optional Export 2 drill-down -->
 			{#if canDrill(node) && open.has(node.path.join('|'))}
 				{#if export2Loading[node.combo_hash ?? '']}
-					<p class="export2-loading" style={`padding-left:${node.depth * 1.25 + 2}rem`}>Loading line items…</p>
+					<p class="export2-loading" style={`padding-left:${node.depth * 1.25 + 2}rem`}>
+						Loading line items…
+					</p>
 				{:else if (export2Cache[node.combo_hash ?? ''] ?? []).length === 0}
-					<p class="export2-empty" style={`padding-left:${node.depth * 1.25 + 2}rem`}>No Export 2 line items for this combo.</p>
+					<p class="export2-empty" style={`padding-left:${node.depth * 1.25 + 2}rem`}>
+						No Export 2 line items for this combo.
+					</p>
 				{:else}
 					{@render rowList(export2Cache[node.combo_hash ?? ''] ?? [])}
 				{/if}
@@ -172,7 +187,9 @@
 	{/each}
 	{#if limited.hiddenCount > 0}
 		<div class="show-all" style={`padding-left:${(list[0]?.depth ?? 0) * 1.25 + 1.5}rem`}>
-			<button class="show-all-btn" onclick={() => revealAll(list)}>+ show all {list.length} ({limited.hiddenCount} more)…</button>
+			<button class="show-all-btn" onclick={() => revealAll(list)}
+				>+ show all {list.length} ({limited.hiddenCount} more)…</button
+			>
 		</div>
 	{/if}
 {/snippet}
@@ -210,7 +227,10 @@
 		letter-spacing: 0.04em;
 		color: var(--color-page-fg-muted);
 	}
-	.ch-margin, .ch-delta, .ch-rev, .ch-impact {
+	.ch-margin,
+	.ch-delta,
+	.ch-rev,
+	.ch-impact {
 		text-align: right;
 	}
 	.tier-row {
@@ -260,13 +280,16 @@
 		font-size: 0.8125rem;
 		font-variant-numeric: tabular-nums;
 	}
-	.m25, .arrow {
+	.m25,
+	.arrow {
 		color: var(--color-page-fg-muted);
 	}
 	.arrow {
 		font-size: 0.6875rem;
 	}
-	.m26 { font-weight: 500; }
+	.m26 {
+		font-weight: 500;
+	}
 	.cell-delta {
 		text-align: right;
 		font-size: 0.75rem;
@@ -315,7 +338,9 @@
 		border-radius: 0.4rem;
 		padding: 0.15rem 0.45rem;
 		opacity: 0;
-		transition: opacity 120ms var(--ease-glass), background-color 120ms var(--ease-glass);
+		transition:
+			opacity 120ms var(--ease-glass),
+			background-color 120ms var(--ease-glass);
 	}
 	/* Reveal only on row hover / keyboard focus, or when this node is selected —
 	   keeps the tree visually quiet and reclaims the vertical space the old
@@ -353,15 +378,50 @@
 		color: var(--color-page-fg-muted);
 		margin: 0;
 	}
-	.leaf-static { display: inline-flex; align-items: center; gap: 0.2rem; min-width: 0; text-align: left; border-radius: 0.4rem; padding-top: 0.15rem; padding-bottom: 0.15rem; padding-right: 0.3rem; cursor: default; }
-	.leaf-static.selected { background: color-mix(in srgb, var(--color-status-open) 12%, transparent); }
-	.export2-loading, .export2-empty { font-size: 0.75rem; color: var(--color-page-fg-muted); font-style: italic; margin: 0; padding-top: 0.2rem; padding-bottom: 0.4rem; }
+	.leaf-static {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		min-width: 0;
+		text-align: left;
+		border-radius: 0.4rem;
+		padding-top: 0.15rem;
+		padding-bottom: 0.15rem;
+		padding-right: 0.3rem;
+		cursor: default;
+	}
+	.leaf-static.selected {
+		background: color-mix(in srgb, var(--color-status-open) 12%, transparent);
+	}
+	.export2-loading,
+	.export2-empty {
+		font-size: 0.75rem;
+		color: var(--color-page-fg-muted);
+		font-style: italic;
+		margin: 0;
+		padding-top: 0.2rem;
+		padding-bottom: 0.4rem;
+	}
 	@media (max-width: 720px) {
-		.col-headers, .tier-row { grid-template-columns: minmax(0, 1fr) 5rem 6rem; }
-		.ch-margin, .cell-margin, .ch-delta, .cell-delta { display: none; }
+		.col-headers,
+		.tier-row {
+			grid-template-columns: minmax(0, 1fr) 5rem 6rem;
+		}
+		.ch-margin,
+		.cell-margin,
+		.ch-delta,
+		.cell-delta {
+			display: none;
+		}
 	}
 	@media (max-width: 480px) {
-		.col-headers, .tier-row { grid-template-columns: minmax(0, 1fr) 5.5rem; }
-		.ch-rev, .cell-rev { display: none; }
+		.col-headers,
+		.tier-row {
+			grid-template-columns: minmax(0, 1fr) 5.5rem;
+		}
+		.ch-rev,
+		.cell-rev {
+			display: none;
+		}
 	}
 </style>

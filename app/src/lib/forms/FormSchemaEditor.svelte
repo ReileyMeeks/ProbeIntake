@@ -160,10 +160,9 @@
 	<div class="subject-section">
 		<h3 class="editor-title">Subject template (optional)</h3>
 		<p class="muted hint">
-			When set, <code>/tickets/new</code> derives the subject from form
-			values and built-in fields. Tokens look like
-			<code>{`{{fieldKey}}`}</code>. Leave blank to let users type
-			their own subject.
+			When set, <code>/tickets/new</code> derives the subject from form values and built-in fields.
+			Tokens look like
+			<code>{`{{fieldKey}}`}</code>. Leave blank to let users type their own subject.
 		</p>
 		<textarea
 			class="ed-input"
@@ -198,13 +197,7 @@
 
 	<div class="editor-header">
 		<h3 class="editor-title">Form fields</h3>
-		<GlassButton
-			onclick={addField}
-			tone="primary"
-			iconOnly
-			size="md"
-			title="Add field"
-		>
+		<GlassButton onclick={addField} tone="primary" iconOnly size="md" title="Add field">
 			<PlusIcon size={14} />
 			<span class="sr-only">Add field</span>
 		</GlassButton>
@@ -358,8 +351,8 @@
 								/>
 								{#if !remoteSiteIntegration}
 									<p class="muted hint inline-warn">
-										No RemoteSite integration configured yet. Save will succeed, but
-										the dropdown will show empty until the integration is set up.
+										No RemoteSite integration configured yet. Save will succeed, but the dropdown
+										will show empty until the integration is set up.
 									</p>
 								{/if}
 							{/if}
@@ -503,8 +496,7 @@
 										...field,
 										showWhen: {
 											field: next,
-											equals:
-												field.showWhen?.field === next ? field.showWhen.equals : []
+											equals: field.showWhen?.field === next ? field.showWhen.equals : []
 										}
 									});
 								}
@@ -522,8 +514,7 @@
 						{@const gateOptions = gateField?.options ?? []}
 						{#if gateOptions.length === 0}
 							<p class="muted hint inline-warn">
-								Gate field <code>{field.showWhen.field}</code> has no options yet.
-								Add options to it first.
+								Gate field <code>{field.showWhen.field}</code> has no options yet. Add options to it first.
 							</p>
 						{:else}
 							<div class="cell">
@@ -561,9 +552,8 @@
 		<div class="preview">
 			<h3 class="preview-title">Live preview</h3>
 			<p class="muted hint">
-				Exactly what <code>/tickets/new</code> shows for this AppSource.
-				Try filling it in — cascading + showWhen + the subject template
-				should all react.
+				Exactly what <code>/tickets/new</code> shows for this AppSource. Try filling it in — cascading
+				+ showWhen + the subject template should all react.
 			</p>
 
 			<!-- Built-in fields the production /tickets/new always renders.
@@ -588,9 +578,7 @@
 							}) || '(template renders empty — fill the fields below)'}
 						</div>
 					{:else}
-						<div class="builtin-value builtin-placeholder">
-							(user types the subject)
-						</div>
+						<div class="builtin-value builtin-placeholder">(user types the subject)</div>
 					{/if}
 				</div>
 				<div class="builtin-field">

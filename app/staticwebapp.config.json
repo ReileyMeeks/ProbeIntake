@@ -1,6 +1,6 @@
 {
-  "navigationFallback": {
-    "rewrite": "/index.html",
-    "exclude": ["/_app/*", "/favicon.png"]
-  }
+	"navigationFallback": {
+		"rewrite": "/index.html",
+		"exclude": ["/_app/*", "/favicon.png"]
+	}
 }

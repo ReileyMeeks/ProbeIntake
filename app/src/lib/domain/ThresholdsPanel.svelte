@@ -2,8 +2,9 @@
 	import GlassCard from '$lib/glass/GlassCard.svelte';
 	import { DEFAULT_THRESHOLDS, type Thresholds } from './types';
 
-	let { thresholds = $bindable<Thresholds>({ ...DEFAULT_THRESHOLDS }) }: { thresholds?: Thresholds } =
-		$props();
+	let {
+		thresholds = $bindable<Thresholds>({ ...DEFAULT_THRESHOLDS })
+	}: { thresholds?: Thresholds } = $props();
 
 	let showTooltip = $state(false);
 </script>
@@ -17,15 +18,25 @@
 				role="button"
 				tabindex="0"
 				aria-label="What are detection thresholds?"
-				onmouseenter={() => { showTooltip = true; }}
-				onmouseleave={() => { showTooltip = false; }}
-				onfocus={() => { showTooltip = true; }}
-				onblur={() => { showTooltip = false; }}
+				onmouseenter={() => {
+					showTooltip = true;
+				}}
+				onmouseleave={() => {
+					showTooltip = false;
+				}}
+				onfocus={() => {
+					showTooltip = true;
+				}}
+				onblur={() => {
+					showTooltip = false;
+				}}
 			>
 				ⓘ
 				{#if showTooltip}
 					<div class="tooltip" role="tooltip">
-						Controls detection sensitivity. Price-flat band sets the tolerance for "no meaningful price change." Cost-spike, price-drop, and mix-drop set the minimum movement to flag each pattern. Lower values catch more; higher values reduce noise.
+						Controls detection sensitivity. Price-flat band sets the tolerance for "no meaningful
+						price change." Cost-spike, price-drop, and mix-drop set the minimum movement to flag
+						each pattern. Lower values catch more; higher values reduce noise.
 					</div>
 				{/if}
 			</span>
@@ -33,15 +44,30 @@
 		<div class="grid">
 			<label class="field">
 				<span class="field-label">Price-flat band %</span>
-				<input class="glass-field" type="number" step="0.1" bind:value={thresholds.price_flat_band_pct} />
+				<input
+					class="glass-field"
+					type="number"
+					step="0.1"
+					bind:value={thresholds.price_flat_band_pct}
+				/>
 			</label>
 			<label class="field">
 				<span class="field-label">Cost-spike % (min)</span>
-				<input class="glass-field" type="number" step="0.1" bind:value={thresholds.cost_spike_pct} />
+				<input
+					class="glass-field"
+					type="number"
+					step="0.1"
+					bind:value={thresholds.cost_spike_pct}
+				/>
 			</label>
 			<label class="field">
 				<span class="field-label">Price-drop % (min)</span>
-				<input class="glass-field" type="number" step="0.1" bind:value={thresholds.price_drop_pct} />
+				<input
+					class="glass-field"
+					type="number"
+					step="0.1"
+					bind:value={thresholds.price_drop_pct}
+				/>
 			</label>
 			<label class="field">
 				<span class="field-label">Mix-drop pp (min)</span>
@@ -131,8 +157,15 @@
 	}
 
 	@media (max-width: 480px) {
-		.card-pad { padding: 1rem; }
-		.grid { grid-template-columns: 1fr 1fr; }
-		.tooltip { left: 0; transform: none; }
+		.card-pad {
+			padding: 1rem;
+		}
+		.grid {
+			grid-template-columns: 1fr 1fr;
+		}
+		.tooltip {
+			left: 0;
+			transform: none;
+		}
 	}
 </style>

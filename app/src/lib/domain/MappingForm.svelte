@@ -96,7 +96,9 @@
 		background-image:
 			linear-gradient(135deg, var(--color-page-fg-muted) 50%, transparent 50%),
 			linear-gradient(225deg, var(--color-page-fg-muted) 50%, transparent 50%);
-		background-position: right 0.875rem top 55%, right 0.5rem top 55%;
+		background-position:
+			right 0.875rem top 55%,
+			right 0.5rem top 55%;
 		background-size: 0.375rem 0.375rem;
 		background-repeat: no-repeat;
 	}
@@ -113,7 +115,11 @@
 	}
 
 	@media (max-width: 480px) {
-		.card-pad { padding: 1rem; }
-		.grid { grid-template-columns: 1fr; }
+		.card-pad {
+			padding: 1rem;
+		}
+		.grid {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

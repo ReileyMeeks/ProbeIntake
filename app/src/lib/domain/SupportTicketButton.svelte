@@ -11,6 +11,4 @@
 	});
 </script>
 
-<GlassButton {href} title="Submit a support ticket">
-	Submit ticket
-</GlassButton>
+<GlassButton {href} title="Submit a support ticket">Submit ticket</GlassButton>

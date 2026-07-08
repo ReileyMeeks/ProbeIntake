@@ -49,7 +49,10 @@
 	const fmtPct = (n: number | null) => (n === null ? '—' : `${(n * 100).toFixed(1)}%`);
 	const fmtUsd = (n: number) =>
 		n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-	function deltaPp(a: number | null, b: number | null): { text: string; dir: 'down' | 'up' | 'flat' } {
+	function deltaPp(
+		a: number | null,
+		b: number | null
+	): { text: string; dir: 'down' | 'up' | 'flat' } {
 		if (a === null || b === null) return { text: '—', dir: 'flat' };
 		const d = (b - a) * 100;
 		if (Math.abs(d) < 0.05) return { text: '0.0 pp', dir: 'flat' };
@@ -114,13 +117,19 @@
 			<h3 class="headline">{selected.label}</h3>
 			{#if childRows.length > 0}
 				<div class="breakdown">
-					<div class="bd-head"><span>Children</span><span class="num">Margin</span><span class="num">Δ</span><span class="num">Impact</span></div>
+					<div class="bd-head">
+						<span>Children</span><span class="num">Margin</span><span class="num">Δ</span><span
+							class="num">Impact</span
+						>
+					</div>
 					{#each childRows as c (c.path.join('|'))}
 						{@const d = deltaPp(c.margin_pct_2025, c.margin_pct_2026)}
 						<div class="bd-row">
 							<span class="bd-label" title={c.label}>{c.label}</span>
 							<span class="num">{fmtPct(c.margin_pct_2025)}→{fmtPct(c.margin_pct_2026)}</span>
-							<span class="num" class:down={d.dir === 'down'} class:up={d.dir === 'up'}>{d.text}</span>
+							<span class="num" class:down={d.dir === 'down'} class:up={d.dir === 'up'}
+								>{d.text}</span
+							>
 							<span class="num">{fmtUsd(c.impact_usd)}</span>
 						</div>
 					{/each}
@@ -152,7 +161,10 @@
 			{:else if data?.no_drilldown}
 				<div class="no-drilldown">
 					<p class="no-drilldown-title">No line-item detail</p>
-					<p class="no-drilldown-hint">Re-run with Export 2 to see cost squeeze, price concession, and mix shift patterns for this combo.</p>
+					<p class="no-drilldown-hint">
+						Re-run with Export 2 to see cost squeeze, price concession, and mix shift patterns for
+						this combo.
+					</p>
 				</div>
 			{:else if data?.narration}
 				<span class="tag">AI drivers</span>
@@ -292,17 +304,48 @@
 		color: var(--color-page-fg-muted);
 		margin: 0;
 	}
-	.breakdown { margin: 0.5rem 0 1rem; }
-	.ai-block { margin: 0.25rem 0 0.5rem; }
-	.ai-text { font-size: 0.8125rem; line-height: 1.55; color: var(--color-page-fg); margin: 0.4rem 0 0; }
-	.ai-text :global(p) { margin: 0.5em 0; }
-	.ai-text :global(p:first-child) { margin-top: 0; }
-	.ai-text :global(p:last-child) { margin-bottom: 0; }
-	.ai-text :global(strong) { font-weight: 600; color: var(--color-page-fg); }
-	.ai-text :global(em) { font-style: italic; }
-	.ai-text :global(ul), .ai-text :global(ol) { margin: 0.4em 0; padding-left: 1.3em; }
-	.ai-text :global(li) { margin: 0.2em 0; }
-	.ai-text :global(code) { background: var(--color-glass-tint); border-radius: 0.25rem; padding: 0.05rem 0.3rem; font-size: 0.78rem; }
+	.breakdown {
+		margin: 0.5rem 0 1rem;
+	}
+	.ai-block {
+		margin: 0.25rem 0 0.5rem;
+	}
+	.ai-text {
+		font-size: 0.8125rem;
+		line-height: 1.55;
+		color: var(--color-page-fg);
+		margin: 0.4rem 0 0;
+	}
+	.ai-text :global(p) {
+		margin: 0.5em 0;
+	}
+	.ai-text :global(p:first-child) {
+		margin-top: 0;
+	}
+	.ai-text :global(p:last-child) {
+		margin-bottom: 0;
+	}
+	.ai-text :global(strong) {
+		font-weight: 600;
+		color: var(--color-page-fg);
+	}
+	.ai-text :global(em) {
+		font-style: italic;
+	}
+	.ai-text :global(ul),
+	.ai-text :global(ol) {
+		margin: 0.4em 0;
+		padding-left: 1.3em;
+	}
+	.ai-text :global(li) {
+		margin: 0.2em 0;
+	}
+	.ai-text :global(code) {
+		background: var(--color-glass-tint);
+		border-radius: 0.25rem;
+		padding: 0.05rem 0.3rem;
+		font-size: 0.78rem;
+	}
 	.ai-btn {
 		appearance: none;
 		border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
@@ -314,18 +357,45 @@
 		border-radius: 0.5rem;
 		padding: 0.25rem 0.65rem;
 	}
-	.ai-btn:hover { background: var(--color-glass-tint); }
-	.bd-head, .bd-row {
+	.ai-btn:hover {
+		background: var(--color-glass-tint);
+	}
+	.bd-head,
+	.bd-row {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) 6.5rem 4rem 5rem;
 		gap: 0.5rem;
 		align-items: center;
 	}
-	.bd-head { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-page-fg-muted); padding-bottom: 0.25rem; border-bottom: 1px solid var(--color-glass-border); }
-	.bd-row { padding: 0.3rem 0; font-size: 0.8125rem; }
-	.bd-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.bd-row .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--color-page-fg-muted); }
-	.bd-head .num { text-align: right; }
-	.bd-row .num.down { color: var(--color-priority-critical); }
-	.bd-row .num.up { color: var(--color-status-resolved); }
+	.bd-head {
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--color-page-fg-muted);
+		padding-bottom: 0.25rem;
+		border-bottom: 1px solid var(--color-glass-border);
+	}
+	.bd-row {
+		padding: 0.3rem 0;
+		font-size: 0.8125rem;
+	}
+	.bd-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.bd-row .num {
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		color: var(--color-page-fg-muted);
+	}
+	.bd-head .num {
+		text-align: right;
+	}
+	.bd-row .num.down {
+		color: var(--color-priority-critical);
+	}
+	.bd-row .num.up {
+		color: var(--color-status-resolved);
+	}
 </style>

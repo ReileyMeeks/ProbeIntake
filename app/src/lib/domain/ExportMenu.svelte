@@ -37,9 +37,15 @@
 	</GlassButton>
 	{#if open}
 		<div class="menu" role="menu">
-			<button class="menu-item" role="menuitem" type="button" onclick={() => onPick('pdf')}>PDF</button>
-			<button class="menu-item" role="menuitem" type="button" onclick={() => onPick('pptx')}>PowerPoint</button>
-			<button class="menu-item" role="menuitem" type="button" onclick={() => onPick('xlsx')}>Excel</button>
+			<button class="menu-item" role="menuitem" type="button" onclick={() => onPick('pdf')}
+				>PDF</button
+			>
+			<button class="menu-item" role="menuitem" type="button" onclick={() => onPick('pptx')}
+				>PowerPoint</button
+			>
+			<button class="menu-item" role="menuitem" type="button" onclick={() => onPick('xlsx')}
+				>Excel</button
+			>
 		</div>
 	{/if}
 	{#if error}

@@ -50,11 +50,7 @@
 
 	const sizeClass = $derived.by(() => {
 		if (iconOnly) {
-			return size === 'sm'
-				? 'btn-icon-sm'
-				: size === 'lg'
-					? 'btn-icon-lg'
-					: 'btn-icon-md';
+			return size === 'sm' ? 'btn-icon-sm' : size === 'lg' ? 'btn-icon-lg' : 'btn-icon-md';
 		}
 		return size === 'sm'
 			? 'px-3 py-1.5 text-sm'

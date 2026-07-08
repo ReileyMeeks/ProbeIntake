@@ -114,12 +114,9 @@ select:focus-visible {
 	 * Dark mode: subtle white edge so the pill border is visible against
 	 * the toolbar's dark glass tint. No drop shadow.
 	 */
-	--shadow-pill-flat:
-		0 0 0 1px rgb(255 255 255 / 0.06),
-		inset 0 1px 0 rgb(255 255 255 / 0.12);
+	--shadow-pill-flat: 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.12);
 	--shadow-pill-flat-hover:
-		0 0 0 1px rgb(255 255 255 / 0.12),
-		inset 0 1px 0 rgb(255 255 255 / 0.18);
+		0 0 0 1px rgb(255 255 255 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.18);
 
 	/* Avante brand colors */
 	--avante-dark-blue: hsl(203, 100%, 29%);
@@ -181,12 +178,8 @@ html[data-theme='light'] {
 	 * we stack a shadow on top of the toolbar's own shadow and get muddy
 	 * double-shadow artifacts.
 	 */
-	--shadow-pill-flat:
-		0 0 0 1px rgb(30 40 70 / 0.08),
-		inset 0 1px 0 rgb(255 255 255 / 0.6);
-	--shadow-pill-flat-hover:
-		0 0 0 1px rgb(30 40 70 / 0.14),
-		inset 0 1px 0 rgb(255 255 255 / 0.7);
+	--shadow-pill-flat: 0 0 0 1px rgb(30 40 70 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.6);
+	--shadow-pill-flat-hover: 0 0 0 1px rgb(30 40 70 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.7);
 }
 
 @layer base {
@@ -204,8 +197,7 @@ html[data-theme='light'] {
 		background: var(--color-page-bg);
 		color: var(--color-page-fg);
 		font-family:
-			-apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display',
-			system-ui, sans-serif;
+			-apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', system-ui, sans-serif;
 		-webkit-font-smoothing: antialiased;
 		text-rendering: optimizeLegibility;
 		overflow-x: hidden;
