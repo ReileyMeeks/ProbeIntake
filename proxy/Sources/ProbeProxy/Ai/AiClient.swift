@@ -13,7 +13,7 @@ enum AiContent: Codable, Sendable {
     private enum K: String, CodingKey { case type, text, source }
     private enum SourceK: String, CodingKey { case type, media_type, data }
 
-    func encode(to encoder: Encoder) throws {
+    func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: K.self)
         switch self {
         case .text(let t):
@@ -26,7 +26,7 @@ enum AiContent: Codable, Sendable {
             try s.encode(b64, forKey: .data)
         }
     }
-    init(from decoder: Decoder) throws {   // decode not used server-side; minimal
+    init(from decoder: any Decoder) throws {   // decode not used server-side; minimal
         let c = try decoder.container(keyedBy: K.self)
         if try c.decode(String.self, forKey: .type) == "text" {
             self = .text(try c.decode(String.self, forKey: .text))

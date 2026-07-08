@@ -13,6 +13,14 @@ import Foundation
         #expect(json.contains("\"type\":\"image\""))
         #expect(json.contains("\"media_type\":\"image\\/jpeg\"") || json.contains("\"media_type\":\"image/jpeg\""))
         #expect(json.contains("\"type\":\"text\""))
+
+        // Verify ordering: image block must appear before text block
+        let imageIdx = json.range(of: "\"type\":\"image\"")?.lowerBound
+        let textIdx = json.range(of: "\"type\":\"text\"")?.lowerBound
+        #expect(imageIdx != nil && textIdx != nil)
+        if let imgPos = imageIdx, let txtPos = textIdx {
+            #expect(imgPos < txtPos, "Image block must serialize before text block")
+        }
     }
 
     @Test func system_block_carries_ephemeral_cache_control() throws {
