@@ -21,6 +21,8 @@
 - **Auth:** single shared password. Store a **Bcrypt hash** in `APP_PASSWORD_HASH`; verify with Vapor's built-in `Bcrypt`. Session via Vapor `SessionsMiddleware` (memory driver — single-instance assumption; documented).
 - **Svelte:** runes mode on (`$state`, `$derived`, `$props`), TypeScript, tests colocated per route as `*.test.ts` (Vitest), Prettier.
 - **Commit after every task.** Conventional-commit messages.
+- **Integration fixture:** `FormImages/` is a real intake set — Work Order WO0341463, GE C1-6 probe (14 JPG photos + `WO0341463 IVIF.pdf` form). Use it for the end-to-end test in Task 17: base64 a few probe photos + treat the form as `isForm:true`, POST to `/api/analyze`, and assert the result extracts `model` ≈ `C1-6` and returns non-empty `findings`/`quoteItems`. (Folder name is a slight misnomer — it holds probe photos too, not just forms.)
+- **Model is swappable, within the Anthropic Messages API envelope.** The reused `AiClient` speaks Anthropic Messages format (system blocks + `content` array + `image.source.base64`). Any model Azure AI Foundry serves on its Anthropic-compatible endpoint works by changing `MODEL_NAME` alone. A model exposed only in a *different* wire format (e.g. Azure OpenAI Chat Completions / GPT-4o vision) would need a separate client adapter — out of scope unless added deliberately.
 
 ---
 
@@ -1401,9 +1403,18 @@ Run:
 cp .env.example .env    # fill APP_PASSWORD_HASH + provider creds
 docker compose up -d --build
 curl -s localhost:8080/health         # ok
-# login then analyze with a real image to confirm the full path
+
+# Full path with the real WO0341463 fixture: login (capture the session cookie),
+# then analyze 2-3 probe photos from FormImages/ (isForm:false) plus one form
+# photo (isForm:true). Build the JSON body by base64-ing the JPGs.
+COOKIE=$(curl -s -c - -X POST localhost:8080/api/login \
+  -H 'content-type: application/json' -d '{"password":"<your pw>"}' | awk '/vapor-session/{print $7}')
+B64=$(base64 -i "FormImages/20250310_065730.jpg" | tr -d '\n')
+curl -s -b "vapor-session=$COOKIE" -X POST localhost:8080/api/analyze \
+  -H 'content-type: application/json' \
+  -d "{\"meta\":{\"so\":\"WO0341463\"},\"images\":[{\"mediaType\":\"image/jpeg\",\"base64\":\"$B64\",\"isForm\":false}]}"
 ```
-Expected: health ok; login returns 200 with a valid password; analyze returns findings JSON.
+Expected: health ok; login 200 with a valid password; analyze returns findings JSON that identifies the probe model as `C1-6`.
 
 - [ ] **Step 4: Commit** — `git add docker-compose.yml .env.example && git commit -m "build: docker-compose with Watchtower auto-update"`
 
