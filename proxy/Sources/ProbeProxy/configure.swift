@@ -3,6 +3,8 @@ import Vapor
 
 public func configure(_ app: Application) async throws {
     configureAiClient(app)
+    // Memory driver: single-instance deployment, no external session store.
+    app.middleware.use(app.sessions.middleware)
     try routes(app)
 }
 

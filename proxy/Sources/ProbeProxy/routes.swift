@@ -7,4 +7,7 @@ func routes(_ app: Application) throws {
     let api = app.grouped("api")
     let analyze = AnalyzeController()
     api.post("analyze", use: analyze.analyze)   // AuthGate added in Task 8
+
+    let auth = AuthController()
+    api.post("login", use: auth.login)
 }
