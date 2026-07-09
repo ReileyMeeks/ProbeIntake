@@ -7,6 +7,9 @@ public func configure(_ app: Application) async throws {
     // Memory driver: single-instance deployment, no external session store.
     app.middleware.use(app.sessions.middleware)
     try routes(app)
+
+    // Serve static SPA files AFTER API routes are registered
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory, defaultFile: "index.html"))
 }
 
 // MARK: - AI client
