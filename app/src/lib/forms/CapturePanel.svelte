@@ -9,16 +9,19 @@
 		isForm: boolean;
 	}
 
-	/** Ported from the HTML mockup's `ZONES` (JS lines ~375-384). */
+	/**
+	 * Per-zone upload slots — one per canonical probe zone plus the eval-form
+	 * slot. Each slot owns its own `<input type=file>`; the camera (when
+	 * active) captures into whichever zone is selected. See "Per-zone file
+	 * upload" in docs/superpowers/specs/2026-07-09-bench-instrument-design.md.
+	 */
 	const ZONES: Zone[] = [
 		{ id: 'lens', label: 'Lens', isForm: false },
 		{ id: 'housing', label: 'Housing', isForm: false },
-		{ id: 'strain', label: 'Strain Relief', isForm: false },
+		{ id: 'strain', label: 'Strain relief', isForm: false },
 		{ id: 'cable', label: 'Cable', isForm: false },
 		{ id: 'connector', label: 'Connector', isForm: false },
-		{ id: 'label', label: 'Probe Label', isForm: false },
-		{ id: 'form-f', label: 'Form Front', isForm: true },
-		{ id: 'form-b', label: 'Form Back', isForm: true }
+		{ id: 'form', label: 'Eval form', isForm: true }
 	];
 
 	// jsdom never fires <img>.onload/.onerror for a `data:` URL src (images
@@ -34,9 +37,8 @@
 	// underlying array/proxy rather than a new one only the child holds.
 	let { images = $bindable<CapturedImage[]>([]) }: { images?: CapturedImage[] } = $props();
 
-	let fileInputEl: HTMLInputElement | undefined = $state();
-	let dragging = $state(false);
-	let zoneIdx = $state(0);
+	let draggingZoneId: string | null = $state(null);
+	let activeZoneId = $state(ZONES[0].id);
 
 	// ── Camera state ──────────────────────────────────────────────────────
 	const cameraSupported =
@@ -49,16 +51,14 @@
 	let flashing = $state(false);
 	let stream: MediaStream | null = null;
 
-	const currentZone = $derived(zoneIdx < ZONES.length ? ZONES[zoneIdx] : null);
+	const activeZoneLabel = $derived(ZONES.find((z) => z.id === activeZoneId)?.label ?? 'Capture');
 
-	function zoneStatus(zone: Zone, i: number): 'captured' | 'form' | 'current' | 'pending' {
-		const captured = images.some((img) => img.zone === zone.id);
-		if (captured) return zone.isForm ? 'form' : 'captured';
-		return i === zoneIdx ? 'current' : 'pending';
+	function imageForZone(zoneId: string): CapturedImage | undefined {
+		return images.find((img) => img.zone === zoneId);
 	}
 
-	function jumpZone(i: number) {
-		zoneIdx = i;
+	function firstEmptyZoneId(): string | undefined {
+		return ZONES.find((z) => !imageForZone(z.id))?.id;
 	}
 
 	// ── File → base64 helpers ─────────────────────────────────────────────
@@ -91,47 +91,54 @@
 		});
 	}
 
-	async function addFromDataUrl(originalDataUrl: string, zone?: Zone) {
-		const imgEl = await loadImageElement(originalDataUrl);
-		const width = imgEl?.naturalWidth || 0;
-		const height = imgEl?.naturalHeight || 0;
-		const downscaled = downscaleToJpeg(imgEl, width, height, originalDataUrl);
-		images.push({
+	/** Downscales `source` and writes the result into `zone`'s slot (replacing any existing image there). */
+	async function setZoneImage(
+		zone: Zone,
+		source: CanvasImageSource | null,
+		width: number,
+		height: number,
+		fallbackDataUrl: string
+	) {
+		const downscaled = downscaleToJpeg(source, width, height, fallbackDataUrl);
+		const entry: CapturedImage = {
 			mediaType: downscaled.mediaType,
 			base64: downscaled.base64,
 			dataUrl: downscaled.dataUrl,
-			isForm: zone?.isForm ?? false,
-			zone: zone?.id
-		});
+			isForm: zone.isForm,
+			zone: zone.id
+		};
+		const idx = images.findIndex((img) => img.zone === zone.id);
+		if (idx === -1) images.push(entry);
+		else images[idx] = entry;
 	}
 
-	async function addFiles(files: Iterable<File>) {
-		for (const file of files) {
-			if (!file.type.startsWith('image/')) continue;
-			const originalDataUrl = await fileToDataUrl(file);
-			await addFromDataUrl(originalDataUrl);
-		}
+	async function handleZoneFile(file: File, zone: Zone) {
+		if (!file.type.startsWith('image/')) return;
+		const originalDataUrl = await fileToDataUrl(file);
+		const imgEl = await loadImageElement(originalDataUrl);
+		const width = imgEl?.naturalWidth || 0;
+		const height = imgEl?.naturalHeight || 0;
+		await setZoneImage(zone, imgEl, width, height, originalDataUrl);
 	}
 
-	async function onFilePick(e: Event) {
+	async function onZoneFilePick(e: Event, zone: Zone) {
 		const input = e.target as HTMLInputElement;
-		if (input.files?.length) await addFiles(input.files);
+		const file = input.files?.[0];
 		input.value = '';
+		if (!file) return;
+		await handleZoneFile(file, zone);
 	}
 
-	async function onDrop(e: DragEvent) {
+	async function onZoneDrop(e: DragEvent, zone: Zone) {
 		e.preventDefault();
-		dragging = false;
-		if (e.dataTransfer?.files?.length) await addFiles(e.dataTransfer.files);
+		draggingZoneId = null;
+		const file = e.dataTransfer?.files?.[0];
+		if (file) await handleZoneFile(file, zone);
 	}
 
-	function removeImage(i: number) {
-		images.splice(i, 1);
-	}
-
-	function setZone(i: number, zoneId: string) {
-		const zoneDef = ZONES.find((z) => z.id === zoneId);
-		images[i] = { ...images[i], zone: zoneDef?.id, isForm: zoneDef?.isForm ?? false };
+	function removeZoneImage(zoneId: string) {
+		const idx = images.findIndex((img) => img.zone === zoneId);
+		if (idx !== -1) images.splice(idx, 1);
 	}
 
 	// ── Camera ────────────────────────────────────────────────────────────
@@ -158,7 +165,7 @@
 			await openStream(devices[0]?.deviceId);
 			cameraActive = true;
 			cameraError = null;
-			zoneIdx = 0;
+			activeZoneId = firstEmptyZoneId() ?? ZONES[0].id;
 		} catch (err) {
 			cameraError = err instanceof Error ? err.message : 'Camera access denied.';
 		}
@@ -182,26 +189,14 @@
 
 	async function captureShot() {
 		if (!videoEl?.srcObject) return;
+		const zone = ZONES.find((z) => z.id === activeZoneId);
+		if (!zone) return;
 		flashing = true;
 		setTimeout(() => (flashing = false), 350);
-		const zone = currentZone ?? undefined;
 		const width = videoEl.videoWidth || 0;
 		const height = videoEl.videoHeight || 0;
-		const downscaled = downscaleToJpeg(videoEl, width, height, '');
-		images.push({
-			mediaType: downscaled.mediaType,
-			base64: downscaled.base64,
-			dataUrl: downscaled.dataUrl,
-			isForm: zone?.isForm ?? false,
-			zone: zone?.id
-		});
-		if (zoneIdx < ZONES.length - 1) zoneIdx++;
-	}
-
-	function retakeShot() {
-		if (!images.length) return;
-		images.pop();
-		if (zoneIdx > 0) zoneIdx--;
+		await setZoneImage(zone, videoEl, width, height, '');
+		activeZoneId = firstEmptyZoneId() ?? zone.id;
 	}
 
 	onDestroy(() => {
@@ -234,99 +229,79 @@
 				</select>
 			</div>
 
-			<div class="zone-pills">
-				{#each ZONES as zone, i (zone.id)}
-					<button type="button" class="zone-pill {zoneStatus(zone, i)}" onclick={() => jumpZone(i)}>
-						{zone.label}{images.some((img) => img.zone === zone.id)
-							? ' ✓'
-							: i === zoneIdx
-								? ' ●'
-								: ''}
-					</button>
-				{/each}
+			<div class="cam-select-row">
+				<label class="label" for="zone-sel">Capturing</label>
+				<select id="zone-sel" class="inp" bind:value={activeZoneId}>
+					{#each ZONES as zone (zone.id)}
+						<option value={zone.id}>{zone.label}{imageForZone(zone.id) ? ' ✓' : ''}</option>
+					{/each}
+				</select>
 			</div>
 
 			<div class="cam-live">
 				<!-- svelte-ignore a11y_media_has_caption -->
 				<video bind:this={videoEl} autoplay playsinline muted></video>
-				<div class="cam-zone-badge mono">
-					{currentZone
-						? `${currentZone.label}${currentZone.isForm ? ' (form)' : ''}`
-						: 'All captured'}
-				</div>
+				<div class="cam-zone-badge mono">{activeZoneLabel}</div>
 				<div class="cam-flash" class:on={flashing}></div>
 			</div>
 
 			<div class="cam-controls">
 				<button type="button" class="btn btn-primary" onclick={captureShot}>Capture</button>
-				<button type="button" class="btn btn-secondary" onclick={retakeShot}>Retake</button>
+				<button type="button" class="btn btn-secondary" onclick={stopCamera}>Done</button>
 			</div>
-		</div>
-	{:else}
-		<div
-			class="upload-zone"
-			class:over={dragging}
-			role="button"
-			tabindex="0"
-			ondragover={(e) => {
-				e.preventDefault();
-				dragging = true;
-			}}
-			ondragleave={() => (dragging = false)}
-			ondrop={onDrop}
-			onclick={() => fileInputEl?.click()}
-			onkeydown={(e) => {
-				if (e.key === 'Enter' || e.key === ' ') fileInputEl?.click();
-			}}
-		>
-			<input
-				bind:this={fileInputEl}
-				data-testid="file-input"
-				type="file"
-				multiple
-				accept="image/*"
-				onchange={onFilePick}
-			/>
-			<div class="upload-title">Drop probe photos or use the camera. Tag each by zone.</div>
-			<div class="upload-sub">JPG, PNG · probe zones + form front &amp; back</div>
 		</div>
 	{/if}
 
-	<div class="img-section">
-		{#if images.length}
-			<div class="img-grid">
-				{#each images as img, i (i)}
-					<div class="thumb">
-						<img src={img.dataUrl} alt={img.zone ? `${img.zone} capture` : `capture ${i + 1}`} />
-						<select
-							class="thumb-zone mono"
-							aria-label="Zone for this image"
-							value={img.zone ?? ''}
-							onchange={(e) => setZone(i, (e.target as HTMLSelectElement).value)}
-						>
-							<option value="">— zone —</option>
-							{#each ZONES as zone (zone.id)}
-								<option value={zone.id}>{zone.label}</option>
-							{/each}
-						</select>
+	<p class="upload-hint">Drop probe photos or use the camera. Tag each by zone.</p>
+
+	<div class="zone-grid">
+		{#each ZONES as zone (zone.id)}
+			{@const img = imageForZone(zone.id)}
+			<div class="zone-slot" class:filled={!!img}>
+				{#if img}
+					<div class="zone-thumb">
+						<img src={img.dataUrl} alt="{zone.label} capture" />
 						<button
 							type="button"
 							class="thumb-rm"
-							aria-label="Remove image"
-							onclick={() => removeImage(i)}>×</button
+							aria-label="Remove {zone.label} image"
+							onclick={() => removeZoneImage(zone.id)}>×</button
 						>
 					</div>
-				{/each}
+				{:else}
+					<label
+						class="zone-upload"
+						class:over={draggingZoneId === zone.id}
+						for="file-{zone.id}"
+						ondragover={(e) => {
+							e.preventDefault();
+							draggingZoneId = zone.id;
+						}}
+						ondragleave={() => (draggingZoneId = null)}
+						ondrop={(e) => onZoneDrop(e, zone)}
+					>
+						<input
+							id="file-{zone.id}"
+							data-testid="file-input-{zone.id}"
+							type="file"
+							accept="image/*"
+							onchange={(e) => onZoneFilePick(e, zone)}
+						/>
+						<span class="zone-upload-plus" aria-hidden="true">+</span>
+					</label>
+				{/if}
+				<span class="zone-slot-label mono">{zone.label}</span>
 			</div>
-			<div class="status-line mono">
-				<span class="cap-dot ready" aria-hidden="true"></span>
-				{images.length} image{images.length !== 1 ? 's' : ''} · compressed
-			</div>
+		{/each}
+	</div>
+
+	<div class="status-line mono">
+		{#if images.length}
+			<span class="cap-dot ready" aria-hidden="true"></span>
+			{images.length} image{images.length !== 1 ? 's' : ''} · compressed
 		{:else}
-			<div class="status-line mono">
-				<span class="cap-dot" aria-hidden="true"></span>
-				No images captured
-			</div>
+			<span class="cap-dot" aria-hidden="true"></span>
+			No images captured
 		{/if}
 	</div>
 </div>
@@ -345,10 +320,10 @@
 	}
 	.btn-sm {
 		height: 26px;
-		padding: 0 10px;
+		padding: 0 14px;
 		background: var(--surface-2);
 		border: 1px solid var(--line-2);
-		border-radius: var(--r-sm);
+		border-radius: 999px;
 		font-size: 11px;
 		font-weight: 500;
 		cursor: pointer;
@@ -358,6 +333,11 @@
 	.btn-sm:hover {
 		background: var(--surface);
 		border-color: var(--ink-3);
+	}
+
+	.upload-hint {
+		font-size: 12px;
+		color: var(--ink-2);
 	}
 
 	/* Camera UI */
@@ -378,41 +358,6 @@
 		flex: 1;
 		height: 30px;
 		font-size: 12px;
-	}
-	.zone-pills {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	.zone-pill {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		font-weight: 500;
-		padding: 3px 9px;
-		border-radius: 999px;
-		cursor: pointer;
-		border: 1px solid;
-		transition: all 0.15s;
-	}
-	.zone-pill.pending {
-		background: var(--surface-2);
-		color: var(--ink-3);
-		border-color: var(--line-2);
-	}
-	.zone-pill.current {
-		background: var(--accent-wash);
-		color: var(--accent);
-		border-color: var(--accent);
-	}
-	.zone-pill.captured {
-		background: rgba(48, 166, 108, 0.1);
-		color: var(--sev-pass);
-		border-color: var(--sev-pass);
-	}
-	.zone-pill.form {
-		background: var(--accent-wash);
-		color: var(--accent-ink);
-		border-color: var(--line-2);
 	}
 	.cam-live {
 		position: relative;
@@ -460,23 +405,52 @@
 		flex: 0 0 auto;
 	}
 
-	/* Upload zone */
-	.upload-zone {
+	/* Per-zone upload slots */
+	.zone-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+	}
+	@media (max-width: 480px) {
+		.zone-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	.zone-slot {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 5px;
+	}
+	.zone-slot-label {
+		font-size: 9px;
+		font-weight: 500;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.zone-slot.filled .zone-slot-label {
+		color: var(--sev-pass);
+	}
+	.zone-upload {
+		width: 100%;
+		aspect-ratio: 1;
 		border: 1.5px dashed var(--line-2);
 		border-radius: var(--r);
-		padding: 18px 14px;
-		text-align: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		cursor: pointer;
-		transition: all 0.2s;
 		background: var(--surface-2);
 		position: relative;
+		transition: all 0.15s;
 	}
-	.upload-zone:hover,
-	.upload-zone.over {
+	.zone-upload:hover,
+	.zone-upload.over {
 		border-color: var(--accent);
 		background: var(--accent-wash);
 	}
-	.upload-zone input {
+	.zone-upload input {
 		position: absolute;
 		inset: 0;
 		opacity: 0;
@@ -484,53 +458,26 @@
 		width: 100%;
 		height: 100%;
 	}
-	.upload-title {
-		font-size: 12px;
+	.zone-upload-plus {
+		font-size: 20px;
 		font-weight: 500;
-		color: var(--ink-2);
-		margin-bottom: 2px;
-	}
-	.upload-sub {
-		font-family: var(--font-mono);
-		font-size: 10px;
 		color: var(--ink-3);
+		line-height: 1;
 	}
-
-	/* Image grid */
-	.img-section {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-	.img-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-		gap: 6px;
-	}
-	.thumb {
+	.zone-thumb {
+		width: 100%;
 		aspect-ratio: 1;
-		border-radius: var(--r-sm);
+		border-radius: var(--r);
 		overflow: hidden;
 		border: 1px solid var(--line);
 		position: relative;
 		background: var(--surface-2);
-		display: flex;
-		flex-direction: column;
 	}
-	.thumb img {
+	.zone-thumb img {
 		width: 100%;
-		flex: 1;
-		min-height: 0;
+		height: 100%;
 		object-fit: cover;
 		display: block;
-	}
-	.thumb-zone {
-		border: none;
-		border-top: 1px solid var(--line);
-		background: var(--surface);
-		font-size: 9px;
-		color: var(--ink-2);
-		padding: 2px;
 	}
 	.thumb-rm {
 		position: absolute;
@@ -552,6 +499,7 @@
 	.thumb-rm:hover {
 		background: var(--ink);
 	}
+
 	.status-line {
 		display: inline-flex;
 		align-items: center;
