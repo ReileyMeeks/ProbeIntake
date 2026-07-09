@@ -1,25 +1,23 @@
 <script lang="ts">
+	import { fade, fly } from 'svelte/transition';
 	import type { AnalyzeResult, CapturedImage, ProbeMeta } from '$lib/domain/probe';
 	import { postAnalyze } from '$lib/api/client';
 	import { intakeStatus } from '$lib/domain/status.svelte';
 	import IntakeForm from '$lib/forms/IntakeForm.svelte';
 	import CapturePanel from '$lib/forms/CapturePanel.svelte';
-	import ProbeSchematic, { type ProbeZone } from '$lib/ui/ProbeSchematic.svelte';
+	import InspectionForm from '$lib/forms/InspectionForm.svelte';
 	import ResultsView from '$lib/ui/ResultsView.svelte';
-
-	const CAPTURE_ZONES: { key: string; label: string }[] = [
-		{ key: 'lens', label: 'Lens' },
-		{ key: 'housing', label: 'Housing' },
-		{ key: 'strain', label: 'Strain relief' },
-		{ key: 'cable', label: 'Cable' },
-		{ key: 'connector', label: 'Connector' }
-	];
 
 	let meta = $state<ProbeMeta>({});
 	let images = $state<CapturedImage[]>([]);
 	let analyzing = $state(false);
 	let result = $state<AnalyzeResult | null>(null);
 	let errorMessage = $state('');
+
+	// Intake and Quote are transitioned views, not side-by-side panes
+	// (Revisions 2, 2026-07-09) — meta/images/result all stay in memory
+	// across the swap, so navigating back to intake never loses work.
+	let view = $state<'intake' | 'quote'>('intake');
 
 	// Mirrors the intake's WO# / analyze status into the top strip, which
 	// lives in a sibling `+layout.svelte` with no direct prop path here.
@@ -28,19 +26,11 @@
 		intakeStatus.woNumber = meta.so ?? '';
 	});
 
-	const captureZones = $derived.by((): ProbeZone[] => {
-		const firstPendingIdx = CAPTURE_ZONES.findIndex(
-			(z) => !images.some((img) => img.zone === z.key)
-		);
-		return CAPTURE_ZONES.map((z, i) => {
-			const captured = images.some((img) => img.zone === z.key);
-			return {
-				key: z.key,
-				label: z.label,
-				state: captured ? 'captured' : i === firstPendingIdx ? 'current' : 'pending'
-			};
-		});
-	});
+	const reduceMotion =
+		typeof window !== 'undefined' &&
+		typeof window.matchMedia === 'function' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const transitionMs = reduceMotion ? 0 : 220;
 
 	// ?demo=1 seeds a fixture result so the populated state can be screenshotted
 	// / reviewed without running a real analysis. Reads location directly
@@ -94,19 +84,27 @@
 		notes: ''
 	};
 
-	if (isDemo) result = DEMO_RESULT;
+	if (isDemo) {
+		result = DEMO_RESULT;
+		view = 'quote';
+	}
 
 	async function analyze() {
 		errorMessage = '';
-		result = null;
 		analyzing = true;
 		try {
 			result = await postAnalyze({ meta, images });
+			view = 'quote';
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'Analysis failed.';
 		} finally {
 			analyzing = false;
 		}
+	}
+
+	/** Back to intake keeps meta/images/result untouched — nothing is lost. */
+	function newIntake() {
+		view = 'intake';
 	}
 </script>
 
@@ -114,39 +112,49 @@
 	<title>Avante Probe Intake</title>
 </svelte:head>
 
-<div class="workspace">
-	<section class="card intake-pane">
-		<div class="pane-hdr">
-			<h1 class="eyebrow">Intake</h1>
-		</div>
-		<div class="pane-body">
-			<IntakeForm bind:meta />
-
-			<div>
-				<h2 class="eyebrow" style="margin-bottom: 8px;">Probe zones</h2>
-				<ProbeSchematic mode="capture" zones={captureZones} />
+{#if view === 'intake'}
+	<div
+		class="view-intake"
+		in:fly={{ y: -12, duration: transitionMs }}
+		out:fade={{ duration: transitionMs }}
+	>
+		<section class="card intake-card">
+			<div class="pane-hdr">
+				<h1 class="eyebrow">Intake</h1>
 			</div>
+			<div class="pane-body">
+				<IntakeForm bind:meta />
+				<CapturePanel bind:images />
+				<InspectionForm bind:images />
 
-			<CapturePanel bind:images />
+				{#if errorMessage}
+					<p class="error-line" role="alert">{errorMessage}</p>
+				{/if}
 
-			<button type="button" class="btn btn-primary" disabled={analyzing} onclick={analyze}>
-				{analyzing ? 'Analyzing…' : 'Analyze probe'}
-			</button>
+				<button type="button" class="btn btn-primary" disabled={analyzing} onclick={analyze}>
+					{analyzing ? 'Analyzing…' : 'Analyze probe'}
+				</button>
+			</div>
+		</section>
+	</div>
+{:else if result}
+	<div
+		class="view-quote"
+		in:fly={{ y: 12, duration: transitionMs }}
+		out:fade={{ duration: transitionMs }}
+	>
+		<div class="quote-toolbar">
+			<button type="button" class="btn-back" onclick={newIntake}>← New intake</button>
+			<!-- Export / Email land here — Task 15 wires them. -->
+			<div class="quote-actions-placeholder"></div>
 		</div>
-	</section>
-
-	<section class="card quote-pane">
-		<div class="pane-hdr">
-			<h1 class="eyebrow">Quote</h1>
-		</div>
-		<div class="pane-body">
-			{#if errorMessage}
-				<p class="error-line" role="alert">{errorMessage}</p>
-			{:else if result}
+		<section class="card quote-card">
+			<div class="pane-hdr">
+				<h1 class="eyebrow">Quote</h1>
+			</div>
+			<div class="pane-body">
 				<ResultsView {result} />
-			{:else}
-				<p class="empty-line">Run analysis to generate a repair quote.</p>
-			{/if}
-		</div>
-	</section>
-</div>
+			</div>
+		</section>
+	</div>
+{/if}

@@ -1,35 +1,32 @@
 <script lang="ts">
 	import type { CapturedImage } from '$lib/domain/probe';
 	import { downscaleToJpeg } from './downscale';
+	import { fileToDataUrl, loadImageElement } from './imageFile';
 	import { onDestroy } from 'svelte';
+	import ProbeSchematic, { type ProbeZone } from '$lib/ui/ProbeSchematic.svelte';
 
 	interface Zone {
 		id: string;
 		label: string;
-		isForm: boolean;
 	}
 
 	/**
-	 * Per-zone upload slots — one per canonical probe zone plus the eval-form
-	 * slot. Each slot owns its own `<input type=file>`; the camera (when
-	 * active) captures into whichever zone is selected. See "Per-zone file
-	 * upload" in docs/superpowers/specs/2026-07-09-bench-instrument-design.md.
+	 * The probe schematic itself is the capture control (Revisions 2,
+	 * 2026-07-09): clicking/activating a zone segment opens a file picker
+	 * scoped to that zone via a hidden per-zone `<input type=file>`. The
+	 * camera (when active) captures into whichever zone is currently
+	 * selected — clicking a different zone while the camera is running just
+	 * retargets it, rather than opening a picker. See "Interactive
+	 * ProbeSchematic capture" in
+	 * docs/superpowers/specs/2026-07-09-bench-instrument-design.md.
 	 */
 	const ZONES: Zone[] = [
-		{ id: 'lens', label: 'Lens', isForm: false },
-		{ id: 'housing', label: 'Housing', isForm: false },
-		{ id: 'strain', label: 'Strain relief', isForm: false },
-		{ id: 'cable', label: 'Cable', isForm: false },
-		{ id: 'connector', label: 'Connector', isForm: false },
-		{ id: 'form', label: 'Eval form', isForm: true }
+		{ id: 'lens', label: 'Lens' },
+		{ id: 'housing', label: 'Housing' },
+		{ id: 'strain', label: 'Strain relief' },
+		{ id: 'cable', label: 'Cable' },
+		{ id: 'connector', label: 'Connector' }
 	];
-
-	// jsdom never fires <img>.onload/.onerror for a `data:` URL src (images
-	// aren't actually decoded there), so decode is raced against this timeout
-	// as a test-environment escape hatch. Real browsers decode even large
-	// photos in a handful of ms, so this only ever fires in a test/headless
-	// environment — production always resolves via `onload` first.
-	const DECODE_TIMEOUT_MS = 200;
 
 	// Mutated in place (push/splice/index-assign) throughout this file rather
 	// than reassigned — that's what makes a caller's own `$state` array (see
@@ -37,8 +34,7 @@
 	// underlying array/proxy rather than a new one only the child holds.
 	let { images = $bindable<CapturedImage[]>([]) }: { images?: CapturedImage[] } = $props();
 
-	let draggingZoneId: string | null = $state(null);
-	let activeZoneId = $state(ZONES[0].id);
+	let fileInputs: Record<string, HTMLInputElement | undefined> = $state({});
 
 	// ── Camera state ──────────────────────────────────────────────────────
 	const cameraSupported =
@@ -48,48 +44,37 @@
 	let videoEl: HTMLVideoElement | undefined = $state();
 	let devices: MediaDeviceInfo[] = $state([]);
 	let selectedDeviceId: string | undefined = $state(undefined);
+	let activeZoneId = $state(ZONES[0].id);
 	let flashing = $state(false);
 	let stream: MediaStream | null = null;
 
 	const activeZoneLabel = $derived(ZONES.find((z) => z.id === activeZoneId)?.label ?? 'Capture');
 
 	function imageForZone(zoneId: string): CapturedImage | undefined {
-		return images.find((img) => img.zone === zoneId);
+		return images.find((img) => img.zone === zoneId && !img.isForm);
 	}
 
 	function firstEmptyZoneId(): string | undefined {
 		return ZONES.find((z) => !imageForZone(z.id))?.id;
 	}
 
-	// ── File → base64 helpers ─────────────────────────────────────────────
-	function fileToDataUrl(file: File): Promise<string> {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(String(reader.result));
-			reader.onerror = () => reject(reader.error ?? new Error('Could not read file'));
-			reader.readAsDataURL(file);
-		});
-	}
+	const captureZones = $derived.by((): ProbeZone[] => {
+		const firstPendingIdx = ZONES.findIndex((z) => !imageForZone(z.id));
+		return ZONES.map((z, i) => ({
+			key: z.id,
+			label: z.label,
+			state: imageForZone(z.id) ? 'captured' : i === firstPendingIdx ? 'current' : 'pending'
+		}));
+	});
 
-	/** Resolves with a loaded `<img>`, or `null` if decode errors or times out. */
-	function loadImageElement(
-		src: string,
-		timeoutMs = DECODE_TIMEOUT_MS
-	): Promise<HTMLImageElement | null> {
-		return new Promise((resolve) => {
-			let settled = false;
-			const finish = (result: HTMLImageElement | null) => {
-				if (settled) return;
-				settled = true;
-				resolve(result);
-			};
-			const img = new Image();
-			img.onload = () => finish(img);
-			img.onerror = () => finish(null);
-			img.src = src;
-			setTimeout(() => finish(null), timeoutMs);
-		});
-	}
+	const thumbnails = $derived.by(() => {
+		const map: Record<string, string> = {};
+		for (const z of ZONES) {
+			const img = imageForZone(z.id);
+			if (img) map[z.id] = img.dataUrl;
+		}
+		return map;
+	});
 
 	/** Downscales `source` and writes the result into `zone`'s slot (replacing any existing image there). */
 	async function setZoneImage(
@@ -104,10 +89,10 @@
 			mediaType: downscaled.mediaType,
 			base64: downscaled.base64,
 			dataUrl: downscaled.dataUrl,
-			isForm: zone.isForm,
+			isForm: false,
 			zone: zone.id
 		};
-		const idx = images.findIndex((img) => img.zone === zone.id);
+		const idx = images.findIndex((img) => img.zone === zone.id && !img.isForm);
 		if (idx === -1) images.push(entry);
 		else images[idx] = entry;
 	}
@@ -129,16 +114,18 @@
 		await handleZoneFile(file, zone);
 	}
 
-	async function onZoneDrop(e: DragEvent, zone: Zone) {
-		e.preventDefault();
-		draggingZoneId = null;
-		const file = e.dataTransfer?.files?.[0];
-		if (file) await handleZoneFile(file, zone);
+	function removeZoneImage(zoneId: string) {
+		const idx = images.findIndex((img) => img.zone === zoneId && !img.isForm);
+		if (idx !== -1) images.splice(idx, 1);
 	}
 
-	function removeZoneImage(zoneId: string) {
-		const idx = images.findIndex((img) => img.zone === zoneId);
-		if (idx !== -1) images.splice(idx, 1);
+	/** Activating a schematic zone opens its file picker — or, while the camera is running, retargets the camera instead. */
+	function activateZone(zoneId: string) {
+		if (cameraActive) {
+			activeZoneId = zoneId;
+			return;
+		}
+		fileInputs[zoneId]?.click();
 	}
 
 	// ── Camera ────────────────────────────────────────────────────────────
@@ -206,7 +193,7 @@
 
 <div class="capture">
 	<div class="capture-hdr">
-		<h2 class="eyebrow">Capture</h2>
+		<h2 class="eyebrow">Probe zones</h2>
 		{#if cameraSupported && !cameraActive}
 			<button type="button" class="btn-sm" onclick={startCamera}>Start camera</button>
 		{:else if cameraActive}
@@ -252,56 +239,58 @@
 		</div>
 	{/if}
 
-	<p class="upload-hint">Drop probe photos or use the camera. Tag each by zone.</p>
+	<p class="upload-hint">Click a zone on the diagram to upload a photo, or use the camera above.</p>
 
-	<div class="zone-grid">
+	<ProbeSchematic mode="capture" zones={captureZones} {thumbnails} onZoneActivate={activateZone} />
+
+	<!-- One hidden file input per zone — the schematic's click/keyboard
+	     handler opens the matching input via `.click()`. Kept in the DOM
+	     (visually hidden, not display:none) rather than only on demand so a
+	     stable, testable `data-testid` always exists. -->
+	<div class="zone-inputs">
 		{#each ZONES as zone (zone.id)}
-			{@const img = imageForZone(zone.id)}
-			<div class="zone-slot" class:filled={!!img}>
-				{#if img}
-					<div class="zone-thumb">
-						<img src={img.dataUrl} alt="{zone.label} capture" />
-						<button
-							type="button"
-							class="thumb-rm"
-							aria-label="Remove {zone.label} image"
-							onclick={() => removeZoneImage(zone.id)}>×</button
-						>
-					</div>
-				{:else}
-					<label
-						class="zone-upload"
-						class:over={draggingZoneId === zone.id}
-						for="file-{zone.id}"
-						ondragover={(e) => {
-							e.preventDefault();
-							draggingZoneId = zone.id;
-						}}
-						ondragleave={() => (draggingZoneId = null)}
-						ondrop={(e) => onZoneDrop(e, zone)}
-					>
-						<input
-							id="file-{zone.id}"
-							data-testid="file-input-{zone.id}"
-							type="file"
-							accept="image/*"
-							onchange={(e) => onZoneFilePick(e, zone)}
-						/>
-						<span class="zone-upload-plus" aria-hidden="true">+</span>
-					</label>
-				{/if}
-				<span class="zone-slot-label mono">{zone.label}</span>
-			</div>
+			<input
+				bind:this={fileInputs[zone.id]}
+				data-testid="file-input-{zone.id}"
+				type="file"
+				accept="image/*"
+				class="sr-only-input"
+				tabindex={-1}
+				aria-hidden="true"
+				onchange={(e) => onZoneFilePick(e, zone)}
+			/>
 		{/each}
 	</div>
 
+	{#if images.some((img) => !img.isForm)}
+		<div class="captured-list">
+			{#each ZONES as zone (zone.id)}
+				{@const img = imageForZone(zone.id)}
+				{#if img}
+					<span class="captured-chip mono">
+						{zone.label}
+						<button
+							type="button"
+							class="chip-rm"
+							aria-label="Remove {zone.label} image"
+							onclick={() => removeZoneImage(zone.id)}>×</button
+						>
+					</span>
+				{/if}
+			{/each}
+		</div>
+	{/if}
+
 	<div class="status-line mono">
-		{#if images.length}
+		{#if images.some((img) => !img.isForm)}
 			<span class="cap-dot ready" aria-hidden="true"></span>
-			{images.length} image{images.length !== 1 ? 's' : ''} · compressed
+			{images.filter((img) => !img.isForm).length} probe image{images.filter((img) => !img.isForm)
+				.length !== 1
+				? 's'
+				: ''} · compressed
 		{:else}
 			<span class="cap-dot" aria-hidden="true"></span>
-			No images captured
+			No probe images captured
 		{/if}
 	</div>
 </div>
@@ -405,99 +394,59 @@
 		flex: 0 0 auto;
 	}
 
-	/* Per-zone upload slots */
-	.zone-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 10px;
-	}
-	@media (max-width: 480px) {
-		.zone-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-	}
-	.zone-slot {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 5px;
-	}
-	.zone-slot-label {
-		font-size: 9px;
-		font-weight: 500;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
-	.zone-slot.filled .zone-slot-label {
-		color: var(--sev-pass);
-	}
-	.zone-upload {
-		width: 100%;
-		aspect-ratio: 1;
-		border: 1.5px dashed var(--line-2);
-		border-radius: var(--r);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		background: var(--surface-2);
+	/* Hidden per-zone file inputs — visually hidden, not display:none, so
+	   programmatic .click() from the schematic behaves consistently and the
+	   element stays queryable/testable. */
+	.zone-inputs {
 		position: relative;
-		transition: all 0.15s;
-	}
-	.zone-upload:hover,
-	.zone-upload.over {
-		border-color: var(--accent);
-		background: var(--accent-wash);
-	}
-	.zone-upload input {
-		position: absolute;
-		inset: 0;
-		opacity: 0;
-		cursor: pointer;
-		width: 100%;
-		height: 100%;
-	}
-	.zone-upload-plus {
-		font-size: 20px;
-		font-weight: 500;
-		color: var(--ink-3);
-		line-height: 1;
-	}
-	.zone-thumb {
-		width: 100%;
-		aspect-ratio: 1;
-		border-radius: var(--r);
+		width: 0;
+		height: 0;
 		overflow: hidden;
-		border: 1px solid var(--line);
-		position: relative;
-		background: var(--surface-2);
 	}
-	.zone-thumb img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
-	}
-	.thumb-rm {
+	.sr-only-input {
 		position: absolute;
-		top: 3px;
-		right: 3px;
-		width: 16px;
-		height: 16px;
-		background: rgba(14, 22, 38, 0.65);
+		width: 1px;
+		height: 1px;
+		opacity: 0;
+		overflow: hidden;
+	}
+
+	/* Captured-zone chips — remove control, distinct from clicking the
+	   schematic zone itself (which re-opens the picker to replace). */
+	.captured-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.captured-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 10px;
+		letter-spacing: 0.02em;
+		color: var(--sev-pass);
+		background: var(--surface-2);
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		padding: 3px 6px 3px 10px;
+	}
+	.chip-rm {
+		width: 15px;
+		height: 15px;
+		background: transparent;
 		border: none;
-		border-radius: 50%;
-		color: #fff;
-		font-size: 11px;
+		color: var(--ink-3);
+		font-size: 12px;
 		line-height: 1;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		border-radius: 50%;
 	}
-	.thumb-rm:hover {
-		background: var(--ink);
+	.chip-rm:hover {
+		background: var(--line);
+		color: var(--ink);
 	}
 
 	.status-line {

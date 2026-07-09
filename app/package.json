@@ -43,6 +43,7 @@
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@types/dompurify": "^3.0.5",
 		"dompurify": "^3.4.8",
-		"marked": "^18.0.4"
+		"marked": "^18.0.4",
+		"pdfjs-dist": "^6.1.200"
 	}
 }

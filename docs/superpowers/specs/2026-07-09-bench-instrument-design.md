@@ -103,3 +103,20 @@ Before finishing, remove one thing that isn't earning its place.
   downscale pipeline (1600px/q0.8) and the `CapturedImage` contract are unchanged (each captured image
   carries its `zone`). Camera capture assigns into the currently-selected zone. The zones with images
   drive the intake-pane ProbeSchematic `captured` states.
+
+## Revisions 2 (2026-07-09, user feedback)
+- **Interactive ProbeSchematic capture:** the probe diagram IS the capture control. Each zone
+  segment (lens/housing/strain/cable/connector) is a clickable, keyboard-focusable target; clicking
+  opens a file picker (and camera option) for THAT zone. A filled zone shows its captured state
+  (fill + a small thumbnail/check). This replaces the separate per-zone slot grid for probe zones.
+  Keep downscale + CapturedImage(zone) contract. Accessible: each zone focusable, Enter/Space opens.
+- **Inspection-form section (PDF):** a dedicated "Inspection form" upload area, separate from the
+  probe zones, accepting PDF **and** images. On PDF, render each page to an image client-side
+  (`pdfjs-dist`) → add as `isForm:true` CapturedImages (so the model reads it as images — no backend
+  change). On image upload, add directly as `isForm:true`. Show page/image thumbnails + remove.
+- **Intake → Quote as transitioned views (not side-by-side):** `+page.svelte` holds
+  `view: 'intake' | 'quote'`. Intake is a single full-width column (comfortable max-width ~900px,
+  centered): fields → interactive ProbeSchematic capture → Inspection-form section → "Analyze probe".
+  On success, transition (fly/fade, respect reduced-motion) to a full-width Quote view (ResultsView +
+  a "New intake"/back control; leave room for Export/Email actions which Task 15 wires). Keep the
+  analyze result in memory (state swap, not a route change).

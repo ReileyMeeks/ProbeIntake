@@ -174,21 +174,58 @@ body {
 }
 
 /* ── Workspace ─────────────────────────────────────────────────────── */
+/*
+ * Intake and Quote are transitioned views, not side-by-side panes
+ * (Revisions 2, 2026-07-09): intake is a single comfortable column; the
+ * quote view takes the full workspace width once analysis lands.
+ */
 
-.workspace {
+.view-intake {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+.view-quote {
 	max-width: 1240px;
 	margin: 0 auto;
 	padding: 20px;
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 16px;
-	align-items: start;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 }
 
-@media (max-width: 900px) {
-	.workspace {
-		grid-template-columns: 1fr;
-	}
+.quote-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.btn-back {
+	height: 32px;
+	padding: 0 16px;
+	border-radius: 999px;
+	border: 1px solid var(--line-2);
+	background: var(--surface);
+	color: var(--ink-2);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.btn-back:hover {
+	background: var(--surface-2);
+	border-color: var(--ink-3);
+}
+
+/* Reserved for Export/Email (Task 15) — kept visually present but inert so
+   the quote view's layout doesn't shift once those land. */
+.quote-actions-placeholder {
+	display: flex;
+	gap: 8px;
+	min-height: 32px;
 }
 
 /* ── Shared primitives (cards, fields, buttons, pills) ────────────── */
