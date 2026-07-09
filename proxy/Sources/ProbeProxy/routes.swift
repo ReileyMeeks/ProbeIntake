@@ -10,4 +10,14 @@ func routes(_ app: Application) throws {
     let gated = api.grouped(AuthGate())
     gated.post("analyze", use: AnalyzeController().analyze)
     gated.post("email", use: EmailController().send)
+
+    // SPA client-side route: serve index.html for /login
+    app.get("login") { req async -> Response in
+        let indexPath = app.directory.publicDirectory + "index.html"
+        do {
+            return try await req.fileio.asyncStreamFile(at: indexPath)
+        } catch {
+            return Response(status: .notFound)
+        }
+    }
 }
