@@ -161,3 +161,4 @@ actor GraphTokenCache {
 
 struct GraphStorageKey: StorageKey { typealias Value = GraphEmailClient }
 extension Application { var graphEmail: GraphEmailClient? { get { storage[GraphStorageKey.self] } set { storage[GraphStorageKey.self] = newValue } } }
+extension Request { var graphEmail: GraphEmailClient? { application.graphEmail } }

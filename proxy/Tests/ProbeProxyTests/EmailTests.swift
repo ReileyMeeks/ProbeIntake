@@ -70,6 +70,63 @@ import NIOCore
             }
         }
     }
+
+    @Test func email_masks_upstream_graph_errors_and_returns_bad_gateway() async throws {
+        try await withApp(configure: configure) { app in
+            // Configure stub to return a Graph API error response
+            let stubClient: any Client = StubGraphClient(
+                eventLoop: app.eventLoopGroup.next(),
+                sendMailStatus: .internalServerError,
+                sendMailErrorBody: #"{"error":{"message":"Internal server error"}}"#
+            )
+            app.graphEmail = GraphEmailClient(
+                tenantId: "tenant", clientId: "client", clientSecret: "secret",
+                client: stubClient, logger: app.logger
+            )
+
+            let cookie = try await sessionCookie(app)
+            try await app.testing().test(.POST, "api/email", beforeRequest: { req in
+                req.headers.replaceOrAdd(name: .cookie, value: cookie)
+                try req.content.encode([
+                    "to": "a@b.com", "subject": "Test", "summary": "Test body"
+                ])
+            }) { res async in
+                // Should return 502 Bad Gateway, not the raw Graph error
+                #expect(res.status == .badGateway)
+                // Response body should NOT contain the raw upstream error message
+                let body = res.body.string
+                #expect(!body.contains("Internal server error"))
+                #expect(!body.contains("microsoft.graph"))
+                // But should contain the masked message
+                #expect(body.contains("Email send failed"))
+            }
+        }
+    }
+
+    @Test func email_returns_429_when_rate_limited() async throws {
+        try await withApp(configure: configure) { app in
+            // Configure stub to return 429 with Retry-After header
+            let stubClient: any Client = StubGraphClient(
+                eventLoop: app.eventLoopGroup.next(),
+                sendMailStatus: .tooManyRequests
+            )
+            app.graphEmail = GraphEmailClient(
+                tenantId: "tenant", clientId: "client", clientSecret: "secret",
+                client: stubClient, logger: app.logger
+            )
+
+            let cookie = try await sessionCookie(app)
+            try await app.testing().test(.POST, "api/email", beforeRequest: { req in
+                req.headers.replaceOrAdd(name: .cookie, value: cookie)
+                try req.content.encode([
+                    "to": "a@b.com", "subject": "Test", "summary": "Test body"
+                ])
+            }) { res async in
+                // Should return 429 for rate limit
+                #expect(res.status == .tooManyRequests)
+            }
+        }
+    }
 }
 
 /// Builds a `GraphEmailClient` backed by a stub `Client` that satisfies both
@@ -84,12 +141,14 @@ private func makeStubGraphEmail(_ app: Application) -> GraphEmailClient {
 
 /// Minimal `Client` conformance that answers the Graph token endpoint with a
 /// canned bearer token and every other request (i.e. `sendMail`) with a bare
-/// 202, regardless of the request body.
+/// 202 by default, but can be configured to return a specific status and body.
 private struct StubGraphClient: Client {
     let eventLoop: any EventLoop
+    var sendMailStatus: HTTPStatus = .accepted
+    var sendMailErrorBody: String?
 
     func delegating(to eventLoop: any EventLoop) -> any Client {
-        StubGraphClient(eventLoop: eventLoop)
+        StubGraphClient(eventLoop: eventLoop, sendMailStatus: sendMailStatus, sendMailErrorBody: sendMailErrorBody)
     }
 
     func send(_ request: ClientRequest) -> EventLoopFuture<ClientResponse> {
@@ -99,6 +158,12 @@ private struct StubGraphClient: Client {
             return eventLoop.makeSucceededFuture(
                 ClientResponse(status: .ok, headers: ["content-type": "application/json"], body: buffer))
         }
-        return eventLoop.makeSucceededFuture(ClientResponse(status: .accepted))
+        // sendMail request
+        var buffer: ByteBuffer?
+        if let errorBody = sendMailErrorBody {
+            buffer = ByteBufferAllocator().buffer(capacity: errorBody.utf8.count)
+            buffer?.writeString(errorBody)
+        }
+        return eventLoop.makeSucceededFuture(ClientResponse(status: sendMailStatus, body: buffer))
     }
 }

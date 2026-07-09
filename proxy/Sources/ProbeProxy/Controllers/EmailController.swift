@@ -8,15 +8,23 @@ struct EmailController {
     struct Body: Content { var to: String; var subject: String; var summary: String; var pdfBase64: String? }
 
     func send(_ req: Request) async throws -> HTTPStatus {
-        guard let graph = req.application.graphEmail else {
+        guard let graph = req.graphEmail else {
             throw Abort(.serviceUnavailable, reason: "Email not configured")
         }
         let body = try req.content.decode(Body.self)
         let mailbox = Environment.get("GRAPH_MAILBOX") ?? ""
-        try await graph.sendMail(
-            mailbox: mailbox, to: body.to, subject: body.subject, body: body.summary,
-            attachment: body.pdfBase64.map { ("probe-report.pdf", $0) }
-        )
-        return .ok
+
+        do {
+            try await graph.sendMail(
+                mailbox: mailbox, to: body.to, subject: body.subject, body: body.summary,
+                attachment: body.pdfBase64.map { ("probe-report.pdf", $0) }
+            )
+            return .ok
+        } catch let GraphError.rateLimited(retryAfter) {
+            throw Abort(.tooManyRequests, reason: "Rate limited\(retryAfter.map { "; retry after \($0)s" } ?? "")")
+        } catch {
+            req.logger.error("email send failed: \(error)")
+            throw Abort(.badGateway, reason: "Email send failed")
+        }
     }
 }
