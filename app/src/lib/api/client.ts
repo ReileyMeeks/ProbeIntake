@@ -12,14 +12,14 @@ import type { AnalyzeResult, CapturedImage, ProbeMeta } from '$lib/domain/probe'
 
 const base = '';
 
-async function post(path: string, body: unknown): Promise<Response> {
+async function post(path: string, body: unknown, { redirectOn401 = true } = {}): Promise<Response> {
 	const res = await fetch(`${base}${path}`, {
 		method: 'POST',
 		headers: { 'content-type': 'application/json' },
 		body: JSON.stringify(body),
 		credentials: 'include'
 	});
-	if (res.status === 401) {
+	if (res.status === 401 && redirectOn401) {
 		location.href = '/login';
 		throw new Error('unauthorized');
 	}
@@ -27,7 +27,7 @@ async function post(path: string, body: unknown): Promise<Response> {
 }
 
 export async function login(password: string): Promise<boolean> {
-	const res = await post('/api/login', { password });
+	const res = await post('/api/login', { password }, { redirectOn401: false });
 	return res.ok;
 }
 
