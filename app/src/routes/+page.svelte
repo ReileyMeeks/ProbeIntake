@@ -3,7 +3,6 @@
 	import type { AnalyzeResult, CapturedImage, ProbeMeta } from '$lib/domain/probe';
 	import { postAnalyze, postEmail } from '$lib/api/client';
 	import { intakeStatus } from '$lib/domain/status.svelte';
-	import { buildReportPdf, pdfBase64 } from '$lib/ui/report';
 	import IntakeForm from '$lib/forms/IntakeForm.svelte';
 	import CapturePanel from '$lib/forms/CapturePanel.svelte';
 	import InspectionForm from '$lib/forms/InspectionForm.svelte';
@@ -151,8 +150,14 @@
 		return lines.filter((l) => l !== '').join('\n');
 	}
 
-	function exportPdf() {
+	// `$lib/ui/report` pulls in jsPDF (~200KB), which is only needed once
+	// someone actually exports/emails a report — a static import would have
+	// bundled it into the main page chunk and pushed it over Vite's 500KB
+	// chunk-size-warning threshold. Dynamic import keeps it in its own
+	// lazily-loaded chunk instead.
+	async function exportPdf() {
 		if (!result) return;
+		const { buildReportPdf } = await import('$lib/ui/report');
 		buildReportPdf(result, meta, images).save(reportFileName(result));
 	}
 
@@ -167,6 +172,7 @@
 		emailStatus = 'idle';
 		emailError = '';
 		try {
+			const { buildReportPdf, pdfBase64 } = await import('$lib/ui/report');
 			const doc = buildReportPdf(result, meta, images);
 			await postEmail({
 				to: emailTo.trim(),
