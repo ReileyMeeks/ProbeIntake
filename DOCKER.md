@@ -55,12 +55,22 @@ Notes
 ```sh
 container system start                 # once per boot, if not already running
 container build -t probe-intake:latest .
-container run --rm -p 8080:8080 --env-file .env probe-intake:latest
+container run -d --name probe-intake --env-file .env probe-intake:latest
 ```
 
-Then open **http://localhost:8080**, and log in with your password (test: `avante-test`).
+**Access — important:** Apple's `container` framework gives each container its **own IP** on a
+private subnet; it does **not** forward `-p 8080` to `localhost` the way Docker does. Find the IP:
 
-To rebuild after code changes: re-run `container build …` then `container run …`.
+```sh
+container ls          # → e.g. probe-intake  ...  running  192.168.64.3/24  ...
+```
+
+Then open **http://192.168.64.3:8080** (use your container's IP), and log in with your password
+(test: `avante-test`). The proxy listens on `:8080` inside the container, so it's `<container-ip>:8080`.
+
+Stop/remove when done: `container stop probe-intake && container rm probe-intake`.
+To rebuild after code changes: `container stop probe-intake && container rm probe-intake`, then
+`container build …` and `container run …` again.
 
 ## 3b. Build & run — Docker (equivalent)
 
@@ -73,10 +83,13 @@ docker run --rm -p 8080:8080 --env-file .env probe-intake:latest
 
 ## 4. Quick smoke test
 
+Set `HOST` to `localhost` (Docker) or your container's IP (Apple `container`, from `container ls`):
+
 ```sh
-curl -s localhost:8080/health          # → ok
+HOST=192.168.64.3      # Apple container IP; or `localhost` for Docker
+curl -s $HOST:8080/health          # → ok
 # log in, keep the session cookie:
-curl -s -c cookies.txt -X POST localhost:8080/api/login \
+curl -s -c cookies.txt -X POST $HOST:8080/api/login \
   -H 'content-type: application/json' -d '{"password":"avante-test"}' -o /dev/null -w '%{http_code}\n'
 # → 200
 ```
