@@ -5,8 +5,8 @@ struct ImageInput: Content { var mediaType: String; var base64: String; var isFo
 struct AnalyzeRequest: Content { var meta: [String: String]; var images: [ImageInput] }
 
 /// `POST /api/analyze` — relays probe/form images + metadata to the configured
-/// vision model and returns its parsed JSON verdict. Stateless: no persistence,
-/// no auth (gating lands in Task 8).
+/// vision model and returns its parsed JSON verdict. Stateless: no persistence.
+/// Gated by `AuthGate` (see routes.swift).
 struct AnalyzeController {
     func analyze(_ req: Request) async throws -> Response {
         guard let ai = req.aiClient else { throw Abort(.serviceUnavailable, reason: "AI provider not configured") }

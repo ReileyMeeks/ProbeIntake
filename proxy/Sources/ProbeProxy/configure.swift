@@ -42,14 +42,18 @@ private func configureAiClient(_ app: Application) {
 ///
 /// Guarded like `configureAiClient`: creds are optional (e.g. CI, or a fresh
 /// checkout without a `.env`), so a missing var must not crash boot —
-/// `app.graphEmail` stays nil and `/api/email` responds 503 until all three
-/// are set.
+/// `app.graphEmail` stays nil and `/api/email` responds 503 until all four
+/// (including the mailbox `EmailController` sends from) are set. Without this
+/// guard, a missing `GRAPH_MAILBOX` would still wire the client and
+/// `EmailController` would fall back to `""`, producing a confusing
+/// `/users//sendMail` request instead of a clean 503.
 private func configureGraphEmail(_ app: Application) {
     guard let tenant = Environment.get("GRAPH_TENANT_ID"),
           let clientId = Environment.get("GRAPH_CLIENT_ID"),
-          let secret = Environment.get("GRAPH_CLIENT_SECRET") else {
+          let secret = Environment.get("GRAPH_CLIENT_SECRET"),
+          Environment.get("GRAPH_MAILBOX") != nil else {
         app.logger.warning(
-            "graph email client not configured — /api/email will return 503 until GRAPH_TENANT_ID/GRAPH_CLIENT_ID/GRAPH_CLIENT_SECRET are set"
+            "graph email client not configured — /api/email will return 503 until GRAPH_TENANT_ID/GRAPH_CLIENT_ID/GRAPH_CLIENT_SECRET/GRAPH_MAILBOX are set"
         )
         return
     }

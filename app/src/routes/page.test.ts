@@ -10,7 +10,17 @@ vi.mock('$lib/api/client', () => ({
 		overallCondition: 'Good',
 		confidence: 90,
 		notes: ''
-	}))
+	})),
+	postEmail: vi.fn(async () => undefined)
+}));
+
+// The email/export flow dynamically imports `$lib/ui/report` (jsPDF) so it
+// doesn't bloat the main page chunk (see +page.svelte's exportPdf comment).
+// Stub it here — these tests only need to assert the wiring into `postEmail`,
+// not real PDF bytes.
+vi.mock('$lib/ui/report', () => ({
+	buildReportPdf: vi.fn(() => ({})),
+	pdfBase64: vi.fn(() => 'ZmFrZS1wZGY=')
 }));
 
 // Intake and Quote are transitioned views (Revisions 2), not side-by-side
@@ -60,5 +70,51 @@ describe('intake → quote flow', () => {
 
 		expect(await screen.findByRole('alert')).toHaveTextContent(/analysis failed/i);
 		expect(screen.getByRole('button', { name: /analyze probe/i })).toBeInTheDocument();
+	});
+});
+
+describe('quote view → email report', () => {
+	async function renderQuoteView() {
+		render(Page);
+		await fireEvent.click(screen.getByRole('button', { name: /analyze probe/i }));
+		await screen.findByText(/^quote$/i);
+	}
+
+	it('sends the report and shows "Sent" on success', async () => {
+		const { postEmail } = await import('$lib/api/client');
+
+		await renderQuoteView();
+
+		await fireEvent.input(screen.getByLabelText(/recipient email/i), {
+			target: { value: 'shop@example.com' }
+		});
+		await fireEvent.click(screen.getByRole('button', { name: /email report/i }));
+
+		await waitFor(() => expect(postEmail).toHaveBeenCalledTimes(1));
+		expect(postEmail).toHaveBeenCalledWith(
+			expect.objectContaining({
+				to: 'shop@example.com',
+				subject: expect.any(String),
+				summary: expect.any(String),
+				pdfBase64: expect.any(String)
+			})
+		);
+
+		expect(await screen.findByText(/^sent$/i)).toBeInTheDocument();
+	});
+
+	it('shows an error and stays sendable when postEmail fails', async () => {
+		const { postEmail } = await import('$lib/api/client');
+		vi.mocked(postEmail).mockRejectedValueOnce(new Error('Email failed — try again.'));
+
+		await renderQuoteView();
+
+		await fireEvent.input(screen.getByLabelText(/recipient email/i), {
+			target: { value: 'shop@example.com' }
+		});
+		await fireEvent.click(screen.getByRole('button', { name: /email report/i }));
+
+		expect(await screen.findByRole('alert')).toHaveTextContent(/email failed/i);
+		expect(screen.getByRole('button', { name: /email report/i })).toBeInTheDocument();
 	});
 });

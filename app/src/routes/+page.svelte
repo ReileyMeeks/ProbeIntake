@@ -93,7 +93,10 @@
 		errorMessage = '';
 		analyzing = true;
 		try {
-			result = await postAnalyze({ meta, images });
+			result = await postAnalyze({
+				meta,
+				images: images.map(({ mediaType, base64, isForm }) => ({ mediaType, base64, isForm }))
+			});
 			view = 'quote';
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'Analysis failed.';
