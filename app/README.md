@@ -1,51 +1,28 @@
-# SvelteKit Template App
+# app/ — Avante Probe Intake SPA
 
-A high-performance, visually stunning SvelteKit template based on the Liquid Glass design system. This template provides a robust foundation for building modern, glassmorphic web applications with built-in support for themes, layouts, and authentication skeletons.
+SvelteKit static SPA (`adapter-static`, Svelte 5 runes, TypeScript, Vitest). This is the frontend for
+the Probe Intake tool; it talks to the Vapor proxy in `../proxy` over `/api` on the same origin. See
+the [project README](../README.md) and [DOCKER.md](../DOCKER.md) for the full picture.
 
-## 🚀 Quickstart
+## Scripts
 
-```bash
-# 1. Clone the repository
-git clone <repo-url>
-cd <repo-name>
-
-# 2. Set up environment variables
-cp .env.example .env
-# Edit .env with your credentials
-
-# 3. Install dependencies
-npm install
-
-# 4. Start the development server
-npm run dev
+```sh
+npm run dev        # dev server (proxies /api to the running backend)
+npm run build      # static build → build/  (served by the proxy in the container)
+npm test           # Vitest
+npm run check      # svelte-check
+npm run lint       # prettier --check
 ```
 
-## ✨ Features
+## Layout
 
-- **Liquid Glass Design System**: Beautiful, high-fidelity glassmorphic components (buttons, cards, toolbars).
-- **Theme Support**: Built-in dark and light modes with zero-flash early paint.
-- **Flexible Layouts**: Support for vertical sidebar and horizontal top-bar layouts.
-- **Authentication Skeleton**: Pre-configured Auth0 integration (can be easily enabled/disabled).
-- **Responsive Design**: Mobile-first approach with adaptive sidebars and menus.
+- `src/routes/+page.svelte` — the intake → quote workspace
+- `src/routes/login/` — shared-password login
+- `src/lib/ui/ProbeSchematic.svelte` — the interactive probe diagram (click a zone to add its photo)
+- `src/lib/ui/ResultsView.svelte` — findings + repair quote
+- `src/lib/ui/report.ts` — jsPDF report export
+- `src/lib/forms/` — intake fields, per-zone capture, image downscaling, PDF form rendering
+- `src/lib/api/client.ts` — calls to the proxy (`login`, `checkSession`, `postAnalyze`, `extractForm`, `postEmail`)
+- `src/lib/domain/probe.ts` — shared types
 
-## 🛠️ Development
-
-### Running Tests
-
-```bash
-npm run test      # Vitest
-npm run check     # svelte-check + tsc
-```
-
-### Building for Production
-
-```bash
-npm run build
-```
-
-## 📝 Roadmap & TODOs
-
-- [ ] Implement core business logic
-- [ ] Configure Authentication provider
-- [ ] Add custom routes and pages
-- [ ] Integrate backend API
+Design direction ("Bench Instrument") is in `../docs/superpowers/specs/2026-07-09-bench-instrument-design.md`.
