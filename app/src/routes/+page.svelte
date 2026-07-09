@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { AnalyzeResult, CapturedImage, ProbeMeta } from '$lib/domain/probe';
-	import { postAnalyze } from '$lib/api/client';
+	import { postAnalyze, postEmail } from '$lib/api/client';
 	import { intakeStatus } from '$lib/domain/status.svelte';
+	import { buildReportPdf, pdfBase64 } from '$lib/ui/report';
 	import IntakeForm from '$lib/forms/IntakeForm.svelte';
 	import CapturePanel from '$lib/forms/CapturePanel.svelte';
 	import InspectionForm from '$lib/forms/InspectionForm.svelte';
@@ -106,6 +107,81 @@
 	function newIntake() {
 		view = 'intake';
 	}
+
+	// ── Export / Email (Task 15) ─────────────────────────────────────────
+
+	let emailTo = $state('');
+	let emailSending = $state(false);
+	let emailStatus = $state<'idle' | 'sent' | 'error'>('idle');
+	let emailError = $state('');
+
+	const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+	const isValidEmail = $derived(EMAIL_RE.test(emailTo.trim()));
+
+	/** `probe-report-<model or WO#>.pdf`, sanitized for use as a filename. */
+	function reportFileName(r: AnalyzeResult): string {
+		const ident = r.probeId.model || meta.so || 'report';
+		return `probe-report-${ident.replace(/[^a-zA-Z0-9-]+/g, '_')}.pdf`;
+	}
+
+	/** `Probe report — <model> <WO#/SO>` — the default email subject. */
+	function reportSubject(r: AnalyzeResult): string {
+		const model = r.probeId.model ?? meta.model ?? 'Unknown';
+		return meta.so ? `Probe report — ${model} ${meta.so}` : `Probe report — ${model}`;
+	}
+
+	/** Short plain-text digest of findings + quote, sent alongside the PDF attachment. */
+	function reportSummary(r: AnalyzeResult): string {
+		const lines = [
+			`Probe: ${r.probeId.model ?? '—'}${r.probeId.sn ? ' · S/N ' + r.probeId.sn : ''}`,
+			meta.so ? `WO#: ${meta.so}` : '',
+			'',
+			'Findings:',
+			...(r.findings.length
+				? r.findings.map((f) => `- [${f.severity}] ${f.zone}: ${f.description}`)
+				: ['- None']),
+			'',
+			'Repair quote:',
+			...(r.quoteItems.length
+				? r.quoteItems.map((q) => `- [${q.priority}] ${q.item} — ${q.rationale}`)
+				: ['- None']),
+			'',
+			`Overall condition: ${r.overallCondition} (confidence ${r.confidence}%)`
+		];
+		return lines.filter((l) => l !== '').join('\n');
+	}
+
+	function exportPdf() {
+		if (!result) return;
+		buildReportPdf(result, meta, images).save(reportFileName(result));
+	}
+
+	function resetEmailStatus() {
+		emailStatus = 'idle';
+		emailError = '';
+	}
+
+	async function sendEmailReport() {
+		if (!result || !isValidEmail || emailSending) return;
+		emailSending = true;
+		emailStatus = 'idle';
+		emailError = '';
+		try {
+			const doc = buildReportPdf(result, meta, images);
+			await postEmail({
+				to: emailTo.trim(),
+				subject: reportSubject(result),
+				summary: reportSummary(result),
+				pdfBase64: pdfBase64(doc)
+			});
+			emailStatus = 'sent';
+		} catch (err) {
+			emailStatus = 'error';
+			emailError = err instanceof Error ? err.message : 'Email failed — try again.';
+		} finally {
+			emailSending = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -145,8 +221,30 @@
 	>
 		<div class="quote-toolbar">
 			<button type="button" class="btn-back" onclick={newIntake}>← New intake</button>
-			<!-- Export / Email land here — Task 15 wires them. -->
-			<div class="quote-actions-placeholder"></div>
+			<div class="quote-actions">
+				{#if emailStatus === 'sent'}
+					<span class="action-status sent">Sent</span>
+				{:else if emailStatus === 'error'}
+					<span class="action-status error" role="alert">{emailError}</span>
+				{/if}
+				<input
+					class="inp email-input"
+					type="email"
+					placeholder="recipient@example.com"
+					aria-label="Recipient email"
+					bind:value={emailTo}
+					oninput={resetEmailStatus}
+				/>
+				<button
+					type="button"
+					class="btn-back"
+					disabled={!isValidEmail || emailSending}
+					onclick={sendEmailReport}
+				>
+					{emailSending ? 'Sending…' : 'Email report'}
+				</button>
+				<button type="button" class="btn-back" onclick={exportPdf}>Export PDF</button>
+			</div>
 		</div>
 		<section class="card quote-card">
 			<div class="pane-hdr">

@@ -215,17 +215,43 @@ body {
 	cursor: pointer;
 }
 
-.btn-back:hover {
+.btn-back:hover:not(:disabled) {
 	background: var(--surface-2);
 	border-color: var(--ink-3);
 }
 
-/* Reserved for Export/Email (Task 15) — kept visually present but inert so
-   the quote view's layout doesn't shift once those land. */
-.quote-actions-placeholder {
+.btn-back:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Export PDF / Email report — right side of the quote toolbar. */
+.quote-actions {
 	display: flex;
+	align-items: center;
 	gap: 8px;
-	min-height: 32px;
+	flex-wrap: wrap;
+}
+
+.email-input {
+	height: 32px;
+	width: 200px;
+	padding: 0 14px;
+	font-size: 12px;
+}
+
+.action-status {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.action-status.sent {
+	color: var(--sev-pass);
+}
+
+.action-status.error {
+	color: var(--sev-major);
 }
 
 /* ── Shared primitives (cards, fields, buttons, pills) ────────────── */
