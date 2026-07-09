@@ -1,565 +1,185 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
-
-/* Strip browser + Tailwind Forms focus rings from all inputs globally.
-   Individual components add their own focus affordances via glass styles. */
-input:focus,
-input:focus-visible,
-textarea:focus,
-textarea:focus-visible,
-select:focus,
-select:focus-visible {
-	outline: none !important;
-	box-shadow: none !important;
-	--tw-ring-shadow: none !important;
-	--tw-ring-offset-shadow: none !important;
-}
-
 /*
- * Liquid Glass design system tokens.
- * Spec: ticket-api/docs/design/liquid-glass-system.md
+ * Ported (selectors + declarations, verbatim values) from
+ * `avante_probe_intake_FINAL (1).html`:
+ *   - :root color vars ........... lines 8-15
+ *   - universal box-sizing reset .. line 16 (the header/workflow-bar rules
+ *     below assume the zero margin/padding reset; included so they render
+ *     as designed)
+ *   - Header (.hdr*) ............. lines 19-33
+ *   - Workflow bar (.wf*) ........ lines 49-57
  *
- * Three-layer fidelity model:
- *   L1 — frosted glass (all modern browsers)
- *   L2 — specular highlight (all modern browsers)
- *   L3 — refractive distortion (Chromium only; auto-fallback elsewhere)
+ * The config bar (.config-*, lines 34-47) is intentionally NOT ported —
+ * API keys are server-side now, so there is nothing left for it to configure.
  *
- * Dark is the default posture. Light mode flips a subset of tokens via
- * [data-theme="light"] on <html>.
+ * This replaces the donor "Liquid Glass" design-system CSS (Tailwind import,
+ * @theme tokens, .glass-* utilities) that shipped with the template scaffold:
+ * the rebuilt layout below no longer uses any of the Glass* components, so
+ * that CSS was dead weight on every page load.
  */
 
-@theme {
-	/* Dark-mode glass surfaces */
-	--color-glass-tint: rgb(255 255 255 / 0.08);
-	--color-glass-tint-strong: rgb(255 255 255 / 0.14);
-	--color-glass-border: rgb(255 255 255 / 0.18);
-	--color-glass-border-bright: rgb(255 255 255 / 0.4);
-
-	/* Foreground/background base colors */
-	--color-page-fg: rgb(245 247 252);
-	--color-page-fg-muted: rgb(180 188 204);
-	/* Dark navy, not black — keeps a blue cast so accent colors don't
-	   look like they're floating on a void. */
-	--color-page-bg: rgb(10 14 26);
-
-	/* Accent (used for prominent buttons, status pills) */
-	--color-accent: rgb(145 185 255);
-	--color-accent-fg: rgb(8 10 16);
-
-	/*
-	 * Solid action tones — used by tinted GlassButtons (tone="primary",
-	 * tone="destructive"). These are deliberately saturated and opaque
-	 * so the button reads as a colored chip with a glass edge, NOT as
-	 * see-through glass with a faint tint. Icon color is fixed white in
-	 * both themes because the bg is dark/saturated enough to support it.
-	 */
-	--color-tone-primary-bg: rgb(56 102 222);
-	--color-tone-primary-hover: rgb(74 122 240);
-	--color-tone-primary-fg: rgb(245 248 255);
-
-	--color-tone-destructive-bg: rgb(214 56 68);
-	--color-tone-destructive-hover: rgb(232 78 90);
-	--color-tone-destructive-fg: rgb(255 248 248);
-
-	/*
-	 * Opaque card surface — used by content-heavy cards where reading
-	 * comfort matters more than aurora-show-through. Still glassy at the
-	 * edges (border + highlight) but the fill is mostly opaque.
-	 */
-	--color-card-opaque: rgb(22 27 44 / 0.78);
-
-	/*
-	 * Segmented-control active pill colors (iOS NSSegmentedControl).
-	 * Dark mode: bright off-white pill, near-black text. Light mode
-	 * inverses to a pure-white pill on a glass track.
-	 */
-	--segmented-active-bg: rgb(238 242 250 / 0.95);
-	--segmented-active-fg: rgb(20 22 32);
-
-	/* Status pill colors — kept WCAG-readable against the dark glass tint */
-	--color-status-open: rgb(120 162 255);
-	--color-status-in-progress: rgb(255 196 96);
-	--color-status-resolved: rgb(120 220 140);
-	--color-status-closed: rgb(160 160 170);
-	--color-status-triage: rgb(212 132 255);
-
-	/* Priority pill colors */
-	--color-priority-low: rgb(160 160 170);
-	--color-priority-medium: rgb(120 162 255);
-	--color-priority-high: rgb(255 196 96);
-	--color-priority-critical: rgb(255 110 110);
-
-	/* Blur + distortion filter chains */
-	--glass-blur: blur(20px) saturate(180%);
-	--glass-blur-toolbar: blur(12px) saturate(160%);
-	--glass-distort: url(#glass-distortion) blur(2px) saturate(180%);
-	/* Subtle refraction for content-dense surfaces — references the
-	   second SVG filter (smaller displacement, tighter noise). */
-	--glass-distort-subtle: url(#glass-distortion-subtle) blur(1px) saturate(160%);
-
-	/* Elevation shadow scales */
-	--shadow-glass-sm: 0 4px 16px rgb(0 0 0 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.16);
-	--shadow-glass-md: 0 8px 32px rgb(0 0 0 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.18);
-	--shadow-glass-lg: 0 16px 48px rgb(0 0 0 / 0.5), inset 0 2px 0 rgb(255 255 255 / 0.22);
-
-	/*
-	 * Toolbar pill — used by buttons sitting inside the floating toolbar
-	 * pill in status-bar mode. We want these to feel like part of the
-	 * toolbar surface, NOT floating above it (the toolbar already has its
-	 * own glass shadow; stacking another below the inner pills creates
-	 * muddy double shadows). Just a faint edge for definition + a hint
-	 * of top highlight.
-	 *
-	 * Dark mode: subtle white edge so the pill border is visible against
-	 * the toolbar's dark glass tint. No drop shadow.
-	 */
-	--shadow-pill-flat: 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.12);
-	--shadow-pill-flat-hover:
-		0 0 0 1px rgb(255 255 255 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.18);
-
-	/* Avante brand colors */
-	--avante-dark-blue: hsl(203, 100%, 29%);
-	--avante-light-blue: hsl(205, 65%, 65%);
-
-	/* Easing — match Apple HIG */
-	--ease-glass: cubic-bezier(0.4, 0, 0.2, 1);
-
-	/* Modal overlay scrim */
-	--color-modal-overlay: rgb(0 0 0 / 0.5);
+:root {
+	--navy: #0a1628;
+	--navy2: #112240;
+	--navy3: #1d3461;
+	--accent: #2563eb;
+	--accent2: #1d4ed8;
+	--teal: #0d9488;
+	--amber: #d97706;
+	--red: #dc2626;
+	--green: #16a34a;
+	--s0: #f1f5f9;
+	--s1: #f8fafc;
+	--s2: #ffffff;
+	--b1: #e2e8f0;
+	--b2: #cbd5e1;
+	--t1: #0f172a;
+	--t2: #334155;
+	--t3: #64748b;
+	--t4: #94a3b8;
 }
 
-/* Light theme overrides — toggled via [data-theme="light"] on <html>. */
-html[data-theme='light'] {
-	--color-glass-tint: rgb(255 255 255 / 0.55);
-	--color-glass-tint-strong: rgb(255 255 255 / 0.7);
-	--color-glass-border: rgb(255 255 255 / 0.7);
-	--color-glass-border-bright: rgb(255 255 255 / 0.95);
-	--color-page-fg: rgb(20 22 32);
-	--color-page-fg-muted: rgb(96 104 120);
-	/* Warm paper tone instead of clinical near-white. */
-	--color-page-bg: rgb(246 244 239);
-	--color-accent-fg: rgb(255 255 255);
-	--shadow-glass-sm: 0 4px 16px rgb(0 0 0 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.6);
-	--shadow-glass-md: 0 8px 32px rgb(0 0 0 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.7);
-	--shadow-glass-lg: 0 16px 48px rgb(0 0 0 / 0.16), inset 0 2px 0 rgb(255 255 255 / 0.8);
-
-	/* Opaque card surface (light variant) — same purpose as dark but the
-	   color leans warm-white so it doesn't look like a hole in the page. */
-	--color-card-opaque: rgb(252 251 247 / 0.92);
-
-	/*
-	 * Pill colors in light mode — the dark-mode defaults (soft pastel
-	 * tints around rgb 120-220) read fine against the dark glass tint
-	 * but disappear against a near-white card. Darker, more saturated
-	 * values here so 4.5:1 contrast holds on cards and on the page.
-	 */
-	--color-status-open: rgb(28 90 220);
-	--color-status-in-progress: rgb(176 110 0);
-	--color-status-resolved: rgb(22 130 60);
-	--color-status-closed: rgb(96 100 112);
-	--color-status-triage: rgb(124 56 192);
-
-	--color-priority-low: rgb(96 100 112);
-	--color-priority-medium: rgb(28 90 220);
-	--color-priority-high: rgb(176 110 0);
-	--color-priority-critical: rgb(196 32 44);
-
-	/* Light-mode segmented active pill — pure white pill on the glass track. */
-	--segmented-active-bg: rgb(255 255 255);
-	--segmented-active-fg: rgb(20 22 32);
-
-	/* Modal overlay in light mode — softer scrim */
-	--color-modal-overlay: rgb(20 22 32 / 0.25);
-
-	/*
-	 * Toolbar pill in light mode — just a tinted edge so the pill border
-	 * is visible against the near-white toolbar. No drop shadow, otherwise
-	 * we stack a shadow on top of the toolbar's own shadow and get muddy
-	 * double-shadow artifacts.
-	 */
-	--shadow-pill-flat: 0 0 0 1px rgb(30 40 70 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.6);
-	--shadow-pill-flat-hover: 0 0 0 1px rgb(30 40 70 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.7);
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
 }
 
-@layer base {
-	:root {
-		color-scheme: dark;
-	}
-	html[data-theme='light'] {
-		color-scheme: light;
-	}
-	html,
-	body {
-		height: 100%;
-	}
-	body {
-		background: var(--color-page-bg);
-		color: var(--color-page-fg);
-		font-family:
-			-apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', system-ui, sans-serif;
-		-webkit-font-smoothing: antialiased;
-		text-rendering: optimizeLegibility;
-		overflow-x: hidden;
-	}
-
-	/* Reduced-transparency fallback: opaque surface, no blur. */
-	@media (prefers-reduced-transparency: reduce) {
-		.glass,
-		.glass-toolbar {
-			background: var(--color-page-bg);
-			backdrop-filter: none;
-			-webkit-backdrop-filter: none;
-		}
-	}
-
-	/* Reduced-motion: no animated gradient background, no glass micro-interactions. */
-	@media (prefers-reduced-motion: reduce) {
-		.bg-glass-aurora {
-			animation: none !important;
-		}
-		.glass-press {
-			transition: none !important;
-		}
-	}
+body {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+	background: var(--s1);
+	color: var(--t1);
+	font-size: 13px;
+	line-height: 1.5;
 }
 
-@layer components {
-	/*
-	 * L1 + L2 — frosted glass with specular highlight.
-	 * Add .glass-refract for L3 (Chromium-only) at runtime via featureDetect.
-	 */
-	.glass {
-		position: relative;
-		background: var(--color-glass-tint);
-		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
-		border: 1px solid var(--color-glass-border);
-		box-shadow: var(--shadow-glass-md);
-		border-radius: 1.25rem;
-		isolation: isolate;
-	}
-	.glass::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		/*
-		 * On light mode this highlight sits on a ~55% opaque white fill, so
-		 * white-on-white is nearly invisible — flat by default. On dark
-		 * mode the fill is only ~8% white (mostly see-through navy), so the
-		 * same gradient reads as a strong diagonal sheen. Kept low here so
-		 * dark mode gets the same flat read as light instead of a visible
-		 * color band.
-		 */
-		background: linear-gradient(
-			135deg,
-			rgb(255 255 255 / 0.06) 0%,
-			rgb(255 255 255 / 0) 40%,
-			rgb(255 255 255 / 0) 60%,
-			rgb(255 255 255 / 0.04) 100%
-		);
-		pointer-events: none;
-		z-index: 0;
-	}
-	.glass > * {
-		position: relative;
-		z-index: 1;
-	}
+/* Header */
+.hdr {
+	background: var(--navy);
+	height: 54px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 20px;
+	position: sticky;
+	top: 0;
+	z-index: 200;
+}
+.hdr-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.hdr-logo {
+	width: 34px;
+	height: 34px;
+	border-radius: 8px;
+	overflow: hidden;
+}
+.hdr-logo img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.hdr-name {
+	font-size: 14px;
+	font-weight: 700;
+	color: #fff;
+	letter-spacing: -0.02em;
+}
+.hdr-sub {
+	font-size: 10px;
+	color: rgba(255, 255, 255, 0.4);
+	margin-top: 1px;
+}
+.hdr-right {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.hdr-status {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 10px;
+	font-weight: 600;
+}
+.hdr-status.ready {
+	color: #4ade80;
+}
+.hdr-status.nokey {
+	color: #fbbf24;
+}
+.hdot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+}
+.hdot.green {
+	background: #22c55e;
+	box-shadow: 0 0 6px #22c55e;
+}
+.hdot.amber {
+	background: #fbbf24;
+}
 
-	/* Stronger tint variant — used by prominent buttons + focused surfaces. */
-	.glass-strong {
-		background: var(--color-glass-tint-strong);
-		border-color: var(--color-glass-border-bright);
-	}
+/* Workflow bar */
+.wfbar {
+	background: var(--s2);
+	border-bottom: 1px solid var(--b1);
+	padding: 0 20px;
+	display: flex;
+	align-items: center;
+	height: 40px;
+	overflow-x: auto;
+	white-space: nowrap;
+}
+.wf {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 10px;
+	font-weight: 500;
+	color: var(--t4);
+}
+.wf.active {
+	color: var(--accent);
+}
+.wf.done {
+	color: var(--green);
+}
+.wfn {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--s0);
+	border: 1.5px solid var(--b2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 8px;
+	font-weight: 700;
+	color: var(--t4);
+	flex-shrink: 0;
+}
+.wf.active .wfn {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: #fff;
+}
+.wf.done .wfn {
+	background: var(--green);
+	border-color: var(--green);
+	color: #fff;
+}
+.warr {
+	color: var(--t4);
+	font-size: 11px;
+	margin: 0 8px;
+}
 
-	/*
-	 * Opaque card variant — content-heavy surfaces (ticket detail panels,
-	 * status/priority pickers, message thread cards) where readability
-	 * needs to win over aurora-show-through. Backdrop blur stays so the
-	 * edges still feel glass-like.
-	 */
-	.glass-opaque {
-		background: var(--color-card-opaque);
-	}
-
-	/* L3 — only added when feature-detected at runtime. */
-	.glass-refract::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		backdrop-filter: var(--glass-distort);
-		-webkit-backdrop-filter: var(--glass-distort);
-		pointer-events: none;
-		z-index: 0;
-	}
-
-	/* L3 subtle — for content-dense surfaces (ticket rows, message
-	   bubbles) where full refraction would make text shimmer. Same
-	   feature-detection gate as .glass-refract. */
-	.glass-refract-subtle::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		backdrop-filter: var(--glass-distort-subtle);
-		-webkit-backdrop-filter: var(--glass-distort-subtle);
-		pointer-events: none;
-		z-index: 0;
-	}
-
-	/* Toolbar variant — lighter blur so content underneath stays legible. */
-	.glass-toolbar {
-		position: relative;
-		background: var(--color-glass-tint);
-		backdrop-filter: var(--glass-blur-toolbar);
-		-webkit-backdrop-filter: var(--glass-blur-toolbar);
-		border-bottom: 1px solid var(--color-glass-border);
-		isolation: isolate;
-	}
-
-	/*
-	 * Solid tinted action tones — used by the standardized X / + / ✓
-	 * button vocabulary. Saturated, opaque, with a glass-edge highlight
-	 * ring so the button reads as a colored bead, not as see-through
-	 * glass with a faint tint.
-	 *
-	 * Highlight stack:
-	 *   • 1px outer white halo  → catch-light on dark backgrounds
-	 *   • soft bg-color glow    → makes the affordance pop, doubles the tone
-	 *   • near-shadow contact   → grounds the bead
-	 *   • inset top highlight   → the lip on a real bead
-	 *   • inset bottom shadow   → the bevel under the bead
-	 *
-	 * The .glass class's backdrop-filter + ::before highlight gradient
-	 * are both neutralized so the solid fill stays solid.
-	 */
-	.tone-primary {
-		background: var(--color-tone-primary-bg) !important;
-		color: var(--color-tone-primary-fg) !important;
-		border: 1px solid color-mix(in srgb, var(--color-tone-primary-bg) 35%, white) !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-		box-shadow:
-			0 0 0 1px rgb(255 255 255 / 0.1),
-			0 8px 22px color-mix(in srgb, var(--color-tone-primary-bg) 35%, transparent),
-			0 2px 6px rgb(0 0 0 / 0.35),
-			inset 0 1px 0 rgb(255 255 255 / 0.16),
-			inset 0 -1px 0 rgb(0 0 0 / 0.18) !important;
-	}
-	.tone-primary:hover {
-		background: var(--color-tone-primary-hover) !important;
-	}
-
-	.tone-destructive {
-		background: var(--color-tone-destructive-bg) !important;
-		color: var(--color-tone-destructive-fg) !important;
-		border: 1px solid color-mix(in srgb, var(--color-tone-destructive-bg) 35%, white) !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-		box-shadow:
-			0 0 0 1px rgb(255 255 255 / 0.1),
-			0 8px 22px color-mix(in srgb, var(--color-tone-destructive-bg) 35%, transparent),
-			0 2px 6px rgb(0 0 0 / 0.35),
-			inset 0 1px 0 rgb(255 255 255 / 0.16),
-			inset 0 -1px 0 rgb(0 0 0 / 0.18) !important;
-	}
-	.tone-destructive:hover {
-		background: var(--color-tone-destructive-hover) !important;
-	}
-
-	/* Neutralize .glass's specular highlight gradient on solid tone buttons. */
-	.tone-primary::before,
-	.tone-destructive::before {
+@media print {
+	.hdr,
+	.wfbar {
 		display: none !important;
-	}
-
-	/*
-	 * Definition edge — neutral (untinted) controls get a thin, uniform,
-	 * theme-relative ring (confirmed against a native iOS 27 reference: a
-	 * subtle gray ring, even all the way around, not emphasized at any one
-	 * side) plus a soft lift shadow. Reserved for neutral buttons; the
-	 * colored .tone-primary/.tone-destructive beads already carry their own
-	 * full-perimeter halo and shouldn't get this treatment.
-	 */
-	.glass-edge-sides {
-		border-color: color-mix(in srgb, var(--color-page-fg) 22%, transparent) !important;
-		box-shadow: var(--shadow-glass-sm) !important;
-	}
-	.glass-edge-sides:hover {
-		border-color: color-mix(in srgb, var(--color-page-fg) 36%, transparent) !important;
-	}
-
-	/*
-	 * Flat toolbar pill — used inside the floating toolbar so individual
-	 * buttons feel part of the toolbar surface rather than floating above
-	 * it. The toolbar already has its own glass shadow; stacking another
-	 * below the inner buttons would create double-shadow muddiness.
-	 *
-	 * Strategy: kill the drop shadow inherited from `.glass`, keep a
-	 * subtle edge halo so the pill border is readable, and a slight top
-	 * highlight for the catch-light. Slightly stronger background tint
-	 * so the pill is visible against the toolbar's own tint.
-	 *
-	 * Applied via the GlassButton `class="toolbar-pill"` prop on the
-	 * sidebar toggle + the three nav links. Defined in global scope so
-	 * it applies to the rendered <a>/<button> without :global() gymnastics.
-	 */
-	.toolbar-pill {
-		box-shadow: var(--shadow-pill-flat) !important;
-		background: var(--color-glass-tint-strong) !important;
-	}
-	.toolbar-pill:hover {
-		box-shadow: var(--shadow-pill-flat-hover) !important;
-	}
-
-	/* ─── Nav group — single glass container for all nav items ───── */
-	/*
-	 * Replaces individual GlassButton pills so nav items feel like a
-	 * cohesive grouped list (sidebar) or segmented control (toolbar).
-	 */
-	.nav-group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-	}
-	/* Row variant (toolbar) — bare pills, no container box */
-	.nav-group-row {
-		flex-direction: row;
-		background: transparent;
-		border: none;
-		border-radius: 0;
-		padding: 0;
-		gap: 0.25rem;
-		overflow: visible;
-	}
-
-	/* ─── Nav item — no individual glass surface ────────────────── */
-	.nav-item {
-		display: flex;
-		align-items: center;
-		gap: 0.4375rem;
-		padding: 0.5rem 1.125rem;
-		border-radius: 0.625rem;
-		font-family: inherit;
-		font-size: 0.875rem;
-		font-weight: 500;
-		color: var(--color-page-fg);
-		text-decoration: none;
-		white-space: nowrap;
-		cursor: pointer;
-		background: transparent;
-		border: none;
-		transition:
-			background 160ms var(--ease-glass),
-			color 160ms var(--ease-glass),
-			border-radius 160ms var(--ease-glass);
-	}
-	/* Icons inherit currentColor — no separate color needed */
-	.nav-item svg {
-		flex-shrink: 0;
-		opacity: 0.85;
-	}
-	.nav-item:hover svg,
-	.nav-item[aria-current='page'] svg {
-		opacity: 1;
-	}
-	/* Toolbar pills: equal fixed width + centered content */
-	.nav-group-row .nav-item {
-		width: 8rem;
-		flex-shrink: 0;
-		justify-content: center;
-		padding: 0.4375rem 0.75rem;
-		border-radius: 999px;
-	}
-	/* Active/current — Avante pill, always visible (dark mode: light-blue bg) */
-	.nav-item[aria-current='page'] {
-		background: var(--avante-light-blue);
-		color: var(--avante-dark-blue);
-		border-radius: 999px;
-	}
-	/* Active — light mode flip: dark-blue bg, light-blue text */
-	html[data-theme='light'] .nav-item[aria-current='page'] {
-		background: var(--avante-dark-blue);
-		color: var(--avante-light-blue);
-	}
-	/* Hover on inactive items: neutral grey pill (adapts to both themes) */
-	.nav-item:not([aria-current='page']):hover,
-	.nav-item:not([aria-current='page']):focus-visible {
-		background: color-mix(in srgb, var(--color-page-fg) 10%, transparent);
-		color: var(--color-page-fg);
-		border-radius: 999px;
-		outline: none;
-	}
-	/* Active item hover/focus: keep Avante colors, silence outline */
-	.nav-item[aria-current='page']:hover,
-	.nav-item[aria-current='page']:focus-visible {
-		outline: none;
-	}
-
-	/* Press feedback — applied to interactive glass surfaces. */
-	.glass-press {
-		transition:
-			transform 160ms var(--ease-glass),
-			box-shadow 160ms var(--ease-glass),
-			background-color 160ms var(--ease-glass);
-	}
-	.glass-press:hover {
-		background: var(--color-glass-tint-strong);
-	}
-	.glass-press:active {
-		transform: scale(0.985);
-		box-shadow: var(--shadow-glass-sm);
-	}
-
-	/* Focus rings sit OUTSIDE the glass border so they're not lost in blur. */
-	.focus-glass:focus-visible {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 3px;
-		border-radius: inherit;
-	}
-
-	/*
-	 * Aurora gradient background.
-	 *
-	 * Three soft color blobs that drift slowly. The motion gives glass
-	 * surfaces something to refract; the drift period (40s) is slow enough
-	 * not to be distracting. Pinned to viewport so it doesn't scroll.
-	 */
-	.bg-glass-aurora {
-		position: fixed;
-		inset: 0;
-		z-index: -1;
-		/*
-		 * Dark mode sits on a navy (not neutral) page-bg, and .glass's
-		 * saturate(180%) backdrop-filter amplifies whatever color shows
-		 * through it. The same blob opacities that read as a faint wash
-		 * in light mode turn into a visible blue gradient streak behind
-		 * glass surfaces here, so dark mode gets noticeably lower values.
-		 */
-		background:
-			radial-gradient(circle at 20% 30%, rgb(120 162 255 / 0.1), transparent 50%),
-			radial-gradient(circle at 80% 20%, rgb(212 132 255 / 0.09), transparent 55%),
-			radial-gradient(circle at 50% 80%, rgb(255 196 96 / 0.07), transparent 60%),
-			var(--color-page-bg);
-		filter: blur(60px) saturate(140%);
-		animation: aurora-drift 40s var(--ease-glass) infinite alternate;
-	}
-	html[data-theme='light'] .bg-glass-aurora {
-		background:
-			radial-gradient(circle at 20% 30%, rgb(120 162 255 / 0.32), transparent 50%),
-			radial-gradient(circle at 80% 20%, rgb(212 132 255 / 0.28), transparent 55%),
-			radial-gradient(circle at 50% 80%, rgb(255 196 96 / 0.24), transparent 60%),
-			var(--color-page-bg);
-	}
-
-	@keyframes aurora-drift {
-		0% {
-			transform: translate(0, 0) scale(1);
-		}
-		100% {
-			transform: translate(-3%, 2%) scale(1.08);
-		}
 	}
 }
