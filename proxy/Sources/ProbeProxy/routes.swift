@@ -10,6 +10,7 @@ func routes(_ app: Application) throws {
     let gated = api.grouped(AuthGate())
     gated.post("analyze", use: AnalyzeController().analyze)
     gated.post("email", use: EmailController().send)
+    gated.get("session") { _ in ["authed": true] }
 
     // SPA client-side route: serve index.html for /login
     app.get("login") { req async -> Response in

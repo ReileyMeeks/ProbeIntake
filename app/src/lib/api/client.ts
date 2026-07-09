@@ -31,6 +31,17 @@ export async function login(password: string): Promise<boolean> {
 	return res.ok;
 }
 
+/**
+ * Used by the root layout's client-side guard to check for a valid session
+ * before rendering the app. Deliberately does not auto-redirect on 401 —
+ * the caller decides how/when to navigate to `/login` (and needs to gate
+ * rendering on the result rather than have this throw).
+ */
+export async function checkSession(): Promise<boolean> {
+	const res = await fetch(`${base}/api/session`, { credentials: 'include' });
+	return res.ok;
+}
+
 export async function postAnalyze(req: {
 	meta: ProbeMeta;
 	images: Pick<CapturedImage, 'mediaType' | 'base64' | 'isForm'>[];
