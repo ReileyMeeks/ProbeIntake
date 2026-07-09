@@ -1,4 +1,3 @@
-import { apiFetch } from '$lib/api/client';
 import { env } from '$env/dynamic/public';
 import type {
 	AnalysisSummary,
@@ -14,6 +13,52 @@ import type {
 	Comparison,
 	Export2Subtree
 } from './types';
+
+/**
+ * This module targets an unrelated donor backend (MarginTrace FastAPI, see
+ * `PUBLIC_API_URL`) inherited from the template this SPA was scaffolded
+ * from — NOT the Probe Intake proxy. It's unreachable from any real route
+ * except transitively via `$lib/domain/me.svelte.ts`'s disabled-by-default
+ * auth skeleton (see app/CLAUDE.md). Kept self-contained (own fetch helper)
+ * rather than sharing `$lib/api/client`, which is now the real Probe Intake
+ * client for `/api/login|analyze|email`. Slated for removal once the
+ * donor auth skeleton is cleaned up.
+ */
+class DonorApiError extends Error {
+	constructor(
+		public readonly status: number,
+		public readonly bodyText: string,
+		public readonly url: string
+	) {
+		super(`${status} ${url}: ${bodyText.slice(0, 200)}`);
+		this.name = 'DonorApiError';
+	}
+}
+
+type DonorFetchOptions = { method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'; body?: unknown };
+
+async function apiFetch<T>(path: string, opts: DonorFetchOptions = {}): Promise<T> {
+	const baseURL = (env.PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+	const url = `${baseURL}${path}`;
+	const headers: Record<string, string> =
+		opts.body instanceof FormData
+			? { Accept: 'application/json' }
+			: opts.body
+				? { 'Content-Type': 'application/json', Accept: 'application/json' }
+				: { Accept: 'application/json' };
+	const res = await fetch(url, {
+		method: opts.method ?? 'GET',
+		headers,
+		body:
+			opts.body instanceof FormData ? opts.body : opts.body ? JSON.stringify(opts.body) : undefined
+	});
+	if (!res.ok) {
+		const bodyText = await res.text().catch(() => '');
+		throw new DonorApiError(res.status, bodyText, url);
+	}
+	if (res.status === 204) return undefined as T;
+	return (await res.json()) as T;
+}
 
 export async function listAnalyses(): Promise<AnalysisSummary[]> {
 	return apiFetch('/api/analyses');
