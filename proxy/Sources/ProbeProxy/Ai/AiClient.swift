@@ -96,7 +96,7 @@ struct AiClient: Sendable {
 }
 
 private struct RequestBody: Codable {
-    var model: String; var max_tokens: Int; var temperature: Double
+    var model: String; var max_tokens: Int; var temperature: Double?
     var system: [AiSystemBlock]; var messages: [AiMessage]
 }
 
