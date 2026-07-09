@@ -5,9 +5,9 @@ func routes(_ app: Application) throws {
     app.get("health") { _ in "ok" }
 
     let api = app.grouped("api")
-    let analyze = AnalyzeController()
-    api.post("analyze", use: analyze.analyze)   // AuthGate added in Task 8
+    api.post("login", use: AuthController().login)
 
-    let auth = AuthController()
-    api.post("login", use: auth.login)
+    // NOTE: /api/email is added under `gated` in Task 9.
+    let gated = api.grouped(AuthGate())
+    gated.post("analyze", use: AnalyzeController().analyze)
 }
