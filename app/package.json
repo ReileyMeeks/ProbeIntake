@@ -38,6 +38,8 @@
 	},
 	"dependencies": {
 		"@auth0/auth0-spa-js": "^2.19.3",
+		"@fontsource/ibm-plex-mono": "^5.2.7",
+		"@fontsource/ibm-plex-sans": "^5.2.8",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@types/dompurify": "^3.0.5",
 		"dompurify": "^3.4.8",

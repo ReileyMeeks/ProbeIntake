@@ -12,7 +12,7 @@
 			if (await login(password)) {
 				location.href = '/';
 			} else {
-				error = 'Incorrect password';
+				error = 'Incorrect password.';
 			}
 		} finally {
 			submitting = false;
@@ -25,13 +25,13 @@
 </svelte:head>
 
 <div class="login-page">
-	<form class="login-card" onsubmit={submit}>
-		<h1 class="login-title">Avante Probe Intake</h1>
+	<form class="login-card card" onsubmit={submit}>
+		<p class="login-word mono">avante · probe intake</p>
 		<p class="login-sub">Enter the shared password to continue.</p>
 
-		<label class="login-label" for="pw">Password</label>
+		<label class="label" for="pw">Password</label>
 		<input
-			class="login-input"
+			class="inp"
 			id="pw"
 			name="password"
 			type="password"
@@ -40,22 +40,22 @@
 			required
 		/>
 
-		<button class="login-btn" type="submit" disabled={submitting}>
+		<button class="btn btn-primary" type="submit" disabled={submitting}>
 			{submitting ? 'Signing in…' : 'Sign in'}
 		</button>
 
-		{#if error}<p class="login-error" role="alert">{error}</p>{/if}
+		{#if error}<p class="error-line" role="alert">{error}</p>{/if}
 	</form>
 </div>
 
 <style>
 	.login-page {
-		min-height: calc(100vh - 94px);
+		min-height: 100vh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		padding: 2rem 1rem;
-		background: var(--s1);
+		background: var(--bg);
 	}
 	.login-card {
 		width: 100%;
@@ -63,68 +63,17 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
-		background: var(--s2);
-		border: 1px solid var(--b1);
-		border-radius: 14px;
-		padding: 24px 22px;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+		padding: 26px 24px;
 	}
-	.login-title {
-		font-size: 16px;
-		font-weight: 700;
-		color: var(--navy);
+	.login-word {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--ink);
 		margin-bottom: 2px;
 	}
 	.login-sub {
 		font-size: 12px;
-		color: var(--t3);
+		color: var(--ink-2);
 		margin-bottom: 10px;
-	}
-	.login-label {
-		font-size: 9px;
-		font-weight: 700;
-		color: var(--t3);
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-	}
-	.login-input {
-		height: 34px;
-		padding: 0 10px;
-		border: 1px solid var(--b2);
-		border-radius: 7px;
-		font-size: 12px;
-		color: var(--t1);
-		background: var(--s2);
-		outline: none;
-		font-family: inherit;
-	}
-	.login-input:focus {
-		border-color: var(--accent);
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-	}
-	.login-btn {
-		height: 38px;
-		margin-top: 6px;
-		background: var(--navy);
-		color: #fff;
-		border: none;
-		border-radius: 9px;
-		font-size: 13px;
-		font-weight: 700;
-		cursor: pointer;
-		font-family: inherit;
-		transition: background 0.15s;
-	}
-	.login-btn:hover:not(:disabled) {
-		background: var(--navy3);
-	}
-	.login-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-	.login-error {
-		font-size: 11px;
-		color: var(--red);
-		margin-top: 2px;
 	}
 </style>

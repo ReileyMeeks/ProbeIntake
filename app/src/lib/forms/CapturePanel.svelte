@@ -209,24 +209,18 @@
 	});
 </script>
 
-<div class="card">
-	<div class="card-hdr">
-		<div class="card-icon" style="background:#f0fdfa;color:var(--teal)">📷</div>
-		<div>
-			<div class="card-title">Capture images</div>
-			<div class="card-sub">Probe zones + form front &amp; back</div>
-		</div>
-		<div class="cam-bar">
-			{#if cameraSupported && !cameraActive}
-				<button type="button" class="cam-btn-sm" onclick={startCamera}>▶ Camera</button>
-			{:else if cameraActive}
-				<button type="button" class="cam-btn-sm" onclick={stopCamera}>■ Stop</button>
-			{/if}
-		</div>
+<div class="capture">
+	<div class="capture-hdr">
+		<h2 class="eyebrow">Capture</h2>
+		{#if cameraSupported && !cameraActive}
+			<button type="button" class="btn-sm" onclick={startCamera}>Start camera</button>
+		{:else if cameraActive}
+			<button type="button" class="btn-sm" onclick={stopCamera}>Stop camera</button>
+		{/if}
 	</div>
 
 	{#if cameraError}
-		<p class="cam-error" role="alert">{cameraError}</p>
+		<p class="error-line" role="alert">{cameraError}</p>
 	{/if}
 
 	{#if cameraActive}
@@ -255,48 +249,46 @@
 			<div class="cam-live">
 				<!-- svelte-ignore a11y_media_has_caption -->
 				<video bind:this={videoEl} autoplay playsinline muted></video>
-				<div class="cam-zone-badge">
+				<div class="cam-zone-badge mono">
 					{currentZone
-						? `${currentZone.isForm ? '📋 ' : ''}${currentZone.label}`
-						: '✓ All captured'}
+						? `${currentZone.label}${currentZone.isForm ? ' (form)' : ''}`
+						: 'All captured'}
 				</div>
 				<div class="cam-flash" class:on={flashing}></div>
 			</div>
 
 			<div class="cam-controls">
-				<button type="button" class="btn-capture" onclick={captureShot}>📷 Capture</button>
-				<button type="button" class="btn-retake" onclick={retakeShot}>Retake</button>
+				<button type="button" class="btn btn-primary" onclick={captureShot}>Capture</button>
+				<button type="button" class="btn btn-secondary" onclick={retakeShot}>Retake</button>
 			</div>
 		</div>
 	{:else}
-		<div class="card-body">
-			<div
-				class="upload-zone"
-				class:over={dragging}
-				role="button"
-				tabindex="0"
-				ondragover={(e) => {
-					e.preventDefault();
-					dragging = true;
-				}}
-				ondragleave={() => (dragging = false)}
-				ondrop={onDrop}
-				onclick={() => fileInputEl?.click()}
-				onkeydown={(e) => {
-					if (e.key === 'Enter' || e.key === ' ') fileInputEl?.click();
-				}}
-			>
-				<input
-					bind:this={fileInputEl}
-					data-testid="file-input"
-					type="file"
-					multiple
-					accept="image/*"
-					onchange={onFilePick}
-				/>
-				<div class="upload-title">Drop images here or click to browse</div>
-				<div class="upload-sub">JPG, PNG · probe zones + form front &amp; back</div>
-			</div>
+		<div
+			class="upload-zone"
+			class:over={dragging}
+			role="button"
+			tabindex="0"
+			ondragover={(e) => {
+				e.preventDefault();
+				dragging = true;
+			}}
+			ondragleave={() => (dragging = false)}
+			ondrop={onDrop}
+			onclick={() => fileInputEl?.click()}
+			onkeydown={(e) => {
+				if (e.key === 'Enter' || e.key === ' ') fileInputEl?.click();
+			}}
+		>
+			<input
+				bind:this={fileInputEl}
+				data-testid="file-input"
+				type="file"
+				multiple
+				accept="image/*"
+				onchange={onFilePick}
+			/>
+			<div class="upload-title">Drop probe photos or use the camera. Tag each by zone.</div>
+			<div class="upload-sub">JPG, PNG · probe zones + form front &amp; back</div>
 		</div>
 	{/if}
 
@@ -307,7 +299,7 @@
 					<div class="thumb">
 						<img src={img.dataUrl} alt={img.zone ? `${img.zone} capture` : `capture ${i + 1}`} />
 						<select
-							class="thumb-zone"
+							class="thumb-zone mono"
 							aria-label="Zone for this image"
 							value={img.zone ?? ''}
 							onchange={(e) => setZone(i, (e.target as HTMLSelectElement).value)}
@@ -321,18 +313,18 @@
 							type="button"
 							class="thumb-rm"
 							aria-label="Remove image"
-							onclick={() => removeImage(i)}>✕</button
+							onclick={() => removeImage(i)}>×</button
 						>
 					</div>
 				{/each}
 			</div>
-			<div class="status-pill ready">
-				<div class="pill-dot green"></div>
+			<div class="status-line mono">
+				<span class="cap-dot ready" aria-hidden="true"></span>
 				{images.length} image{images.length !== 1 ? 's' : ''} · compressed
 			</div>
 		{:else}
-			<div class="status-pill empty">
-				<div class="pill-dot gray"></div>
+			<div class="status-line mono">
+				<span class="cap-dot" aria-hidden="true"></span>
 				No images captured
 			</div>
 		{/if}
@@ -340,129 +332,92 @@
 </div>
 
 <style>
-	.card {
-		background: var(--s2);
-		border: 1px solid var(--b1);
-		border-radius: 14px;
-		overflow: hidden;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-	}
-	.card-hdr {
-		padding: 11px 14px 10px;
-		border-bottom: 1px solid var(--b1);
+	.capture {
 		display: flex;
-		align-items: center;
-		gap: 9px;
+		flex-direction: column;
+		gap: 10px;
 	}
-	.card-icon {
-		width: 26px;
+	.capture-hdr {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.btn-sm {
 		height: 26px;
-		border-radius: 7px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		font-size: 13px;
-	}
-	.card-title {
-		font-size: 12px;
-		font-weight: 600;
-		color: var(--t1);
-	}
-	.card-sub {
-		font-size: 10px;
-		color: var(--t4);
-		margin-top: 1px;
-	}
-	.card-body {
-		padding: 13px;
-	}
-	.cam-bar {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		margin-left: auto;
-	}
-	.cam-btn-sm {
-		height: 24px;
-		padding: 0 9px;
-		background: var(--s0);
-		border: 1px solid var(--b2);
-		border-radius: 6px;
-		font-size: 10px;
+		padding: 0 10px;
+		background: var(--surface-2);
+		border: 1px solid var(--line-2);
+		border-radius: var(--r-sm);
+		font-size: 11px;
 		font-weight: 500;
 		cursor: pointer;
-		color: var(--t2);
-		font-family: inherit;
+		color: var(--ink-2);
+		font-family: var(--font-sans);
 	}
-	.cam-btn-sm:hover {
-		background: var(--b1);
-	}
-	.cam-error {
-		font-size: 10px;
-		color: var(--red);
-		padding: 8px 14px 0;
+	.btn-sm:hover {
+		background: var(--surface);
+		border-color: var(--ink-3);
 	}
 
 	/* Camera UI */
 	.cam-ui {
-		border-bottom: 1px solid var(--b1);
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 	.cam-select-row {
-		padding: 10px 13px 0;
 		display: flex;
 		align-items: center;
-		gap: 7px;
+		gap: 8px;
 	}
 	.cam-select-row .label {
 		white-space: nowrap;
 	}
 	.cam-select-row .inp {
 		flex: 1;
-		height: 28px;
-		font-size: 10px;
+		height: 30px;
+		font-size: 12px;
 	}
 	.zone-pills {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 5px;
-		padding: 10px 13px 6px;
+		gap: 6px;
 	}
 	.zone-pill {
-		font-size: 9px;
-		font-weight: 600;
-		padding: 3px 8px;
-		border-radius: 20px;
+		font-family: var(--font-mono);
+		font-size: 10px;
+		font-weight: 500;
+		padding: 3px 9px;
+		border-radius: 999px;
 		cursor: pointer;
 		border: 1px solid;
 		transition: all 0.15s;
-		font-family: inherit;
 	}
 	.zone-pill.pending {
-		background: var(--s0);
-		color: var(--t4);
-		border-color: var(--b2);
+		background: var(--surface-2);
+		color: var(--ink-3);
+		border-color: var(--line-2);
 	}
 	.zone-pill.current {
-		background: rgba(37, 99, 235, 0.1);
+		background: var(--accent-wash);
 		color: var(--accent);
-		border-color: rgba(37, 99, 235, 0.3);
+		border-color: var(--accent);
 	}
 	.zone-pill.captured {
-		background: rgba(22, 163, 74, 0.1);
-		color: #15803d;
-		border-color: rgba(22, 163, 74, 0.3);
+		background: rgba(48, 166, 108, 0.1);
+		color: var(--sev-pass);
+		border-color: var(--sev-pass);
 	}
 	.zone-pill.form {
-		background: rgba(13, 148, 136, 0.1);
-		color: var(--teal);
-		border-color: rgba(13, 148, 136, 0.3);
+		background: var(--accent-wash);
+		color: var(--accent-ink);
+		border-color: var(--line-2);
 	}
 	.cam-live {
 		position: relative;
-		background: #000;
-		margin: 0 13px;
-		border-radius: 9px;
+		background: var(--ink);
+		border-radius: var(--r);
 		overflow: hidden;
 	}
 	.cam-live video {
@@ -475,13 +430,11 @@
 		position: absolute;
 		top: 8px;
 		left: 8px;
-		background: rgba(0, 0, 0, 0.7);
+		background: rgba(14, 22, 38, 0.7);
 		color: #fff;
-		font-size: 9px;
-		font-weight: 700;
+		font-size: 10px;
 		padding: 3px 10px;
-		border-radius: 20px;
-		text-transform: uppercase;
+		border-radius: 999px;
 		letter-spacing: 0.04em;
 	}
 	.cam-flash {
@@ -497,57 +450,31 @@
 	}
 	.cam-controls {
 		display: flex;
-		gap: 7px;
-		padding: 10px 13px 13px;
+		gap: 8px;
 	}
-	.btn-capture {
+	.cam-controls .btn {
 		flex: 1;
-		height: 40px;
-		background: var(--accent);
-		color: #fff;
-		border: none;
-		border-radius: 9px;
-		font-size: 13px;
-		font-weight: 700;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 7px;
-		font-family: inherit;
-		transition: background 0.15s;
+		width: auto;
 	}
-	.btn-capture:hover {
-		background: var(--accent2);
-	}
-	.btn-retake {
-		height: 40px;
-		padding: 0 13px;
-		background: var(--s0);
-		color: var(--t2);
-		border: 1px solid var(--b2);
-		border-radius: 9px;
-		font-size: 11px;
-		font-weight: 500;
-		cursor: pointer;
-		font-family: inherit;
+	.cam-controls .btn-secondary {
+		flex: 0 0 auto;
 	}
 
 	/* Upload zone */
 	.upload-zone {
-		border: 1.5px dashed var(--b2);
-		border-radius: 9px;
-		padding: 14px;
+		border: 1.5px dashed var(--line-2);
+		border-radius: var(--r);
+		padding: 18px 14px;
 		text-align: center;
 		cursor: pointer;
 		transition: all 0.2s;
-		background: var(--s1);
+		background: var(--surface-2);
 		position: relative;
 	}
 	.upload-zone:hover,
 	.upload-zone.over {
 		border-color: var(--accent);
-		background: rgba(37, 99, 235, 0.04);
+		background: var(--accent-wash);
 	}
 	.upload-zone input {
 		position: absolute;
@@ -558,33 +485,35 @@
 		height: 100%;
 	}
 	.upload-title {
-		font-size: 11px;
+		font-size: 12px;
 		font-weight: 500;
-		color: var(--t2);
+		color: var(--ink-2);
 		margin-bottom: 2px;
 	}
 	.upload-sub {
+		font-family: var(--font-mono);
 		font-size: 10px;
-		color: var(--t4);
+		color: var(--ink-3);
 	}
 
 	/* Image grid */
 	.img-section {
-		padding: 0 13px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
 	}
 	.img-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-		gap: 5px;
-		margin-top: 4px;
+		gap: 6px;
 	}
 	.thumb {
 		aspect-ratio: 1;
-		border-radius: 6px;
+		border-radius: var(--r-sm);
 		overflow: hidden;
-		border: 1px solid var(--b1);
+		border: 1px solid var(--line);
 		position: relative;
-		background: var(--s0);
+		background: var(--surface-2);
 		display: flex;
 		flex-direction: column;
 	}
@@ -597,79 +526,47 @@
 	}
 	.thumb-zone {
 		border: none;
-		border-top: 1px solid var(--b1);
-		background: var(--s2);
-		font-size: 8px;
-		color: var(--t3);
-		padding: 1px 2px;
-		font-family: inherit;
+		border-top: 1px solid var(--line);
+		background: var(--surface);
+		font-size: 9px;
+		color: var(--ink-2);
+		padding: 2px;
 	}
 	.thumb-rm {
 		position: absolute;
 		top: 3px;
 		right: 3px;
-		width: 15px;
-		height: 15px;
-		background: rgba(0, 0, 0, 0.65);
+		width: 16px;
+		height: 16px;
+		background: rgba(14, 22, 38, 0.65);
 		border: none;
 		border-radius: 50%;
 		color: #fff;
-		font-size: 9px;
+		font-size: 11px;
+		line-height: 1;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
-	.status-pill {
+	.thumb-rm:hover {
+		background: var(--ink);
+	}
+	.status-line {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		font-size: 10px;
-		font-weight: 600;
-		padding: 3px 9px;
-		border-radius: 20px;
-		margin-top: 8px;
-	}
-	.status-pill.empty {
-		background: var(--s0);
-		color: var(--t4);
-	}
-	.status-pill.ready {
-		background: rgba(22, 163, 74, 0.1);
-		color: #15803d;
-	}
-	.pill-dot {
-		width: 5px;
-		height: 5px;
-		border-radius: 50%;
-	}
-	.pill-dot.gray {
-		background: var(--t4);
-	}
-	.pill-dot.green {
-		background: var(--green);
-	}
-
-	.label {
-		font-size: 9px;
-		font-weight: 700;
-		color: var(--t3);
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-	}
-	.inp {
-		height: 30px;
-		padding: 0 9px;
-		border: 1px solid var(--b2);
-		border-radius: 7px;
+		gap: 6px;
 		font-size: 11px;
-		color: var(--t1);
-		background: var(--s2);
-		outline: none;
-		font-family: inherit;
+		color: var(--ink-3);
 	}
-	.inp:focus {
-		border-color: var(--accent);
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+	.cap-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: var(--ink-3);
+		flex-shrink: 0;
+	}
+	.cap-dot.ready {
+		background: var(--sev-pass);
 	}
 </style>
