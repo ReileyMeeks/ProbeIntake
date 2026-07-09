@@ -1,0 +1,74 @@
+- generic [ref=f2e2]:
+  - banner [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - img "Avante Health Solutions" [ref=f2e6]
+      - generic [ref=f2e7]:
+        - generic [ref=f2e8]: avante
+        - generic [ref=f2e10]: probe intake
+    - generic [ref=f2e12]:
+      - generic [ref=f2e13]: ●
+      - text: ready
+  - generic [ref=f2e15]:
+    - heading "Intake" [level=1] [ref=f2e17]
+    - generic [ref=f2e18]:
+      - generic [ref=f2e19]:
+        - heading "Probe identification" [level=2] [ref=f2e20]
+        - generic [ref=f2e21]:
+          - generic [ref=f2e22]:
+            - generic [ref=f2e23]: Model
+            - textbox "Model" [ref=f2e24]:
+              - /placeholder: e.g. GE C1-6-D
+          - generic [ref=f2e25]:
+            - generic [ref=f2e26]: Serial number
+            - textbox "Serial number" [ref=f2e27]:
+              - /placeholder: e.g. 250840YP6
+          - generic [ref=f2e28]:
+            - generic [ref=f2e29]: REF / part no.
+            - textbox "REF / part no." [ref=f2e30]:
+              - /placeholder: e.g. 5418916
+          - generic [ref=f2e31]:
+            - generic [ref=f2e32]: Mfg. date
+            - textbox "Mfg. date" [ref=f2e33]:
+              - /placeholder: e.g. 2017-06
+          - generic [ref=f2e34]:
+            - generic [ref=f2e35]: Sales order / SO#
+            - textbox "Sales order / SO#" [ref=f2e36]:
+              - /placeholder: SO number — used in email subject
+          - generic [ref=f2e37]:
+            - generic [ref=f2e38]: Customer
+            - textbox "Customer" [ref=f2e39]:
+              - /placeholder: Customer name
+          - generic [ref=f2e40]:
+            - generic [ref=f2e41]: Tech notes
+            - textbox "Tech notes" [ref=f2e42]:
+              - /placeholder: Customer complaint, additional observations...
+      - generic [ref=f2e43]:
+        - heading "Probe zones" [level=2] [ref=f2e45]
+        - paragraph [ref=f2e46]: Click a zone on the diagram to upload a photo, or use the camera above.
+        - figure [ref=f2e47]:
+          - img "Probe schematic, capture mode" [ref=f2e48]:
+            - button "Lens zone — activate to capture a photo" [ref=f2e49] [cursor=pointer]
+            - button "Housing zone — activate to capture a photo" [ref=f2e51] [cursor=pointer]
+            - button "Strain relief zone — activate to capture a photo" [ref=f2e53] [cursor=pointer]
+            - button "Cable zone — activate to capture a photo" [ref=f2e55] [cursor=pointer]
+            - button "Connector zone — activate to capture a photo" [ref=f2e58] [cursor=pointer]
+            - generic [ref=f2e61]: Lens
+            - generic [ref=f2e62]: Housing
+            - generic [ref=f2e63]: Strain relief
+            - generic [ref=f2e64]: Cable
+            - generic [ref=f2e65]: Connector
+        - generic:
+          - button [ref=f2e66]
+          - button [ref=f2e67]
+          - button [ref=f2e68]
+          - button [ref=f2e69]
+          - button [ref=f2e70]
+        - generic [ref=f2e71]: No probe images captured
+      - generic [ref=f2e73]:
+        - heading "Inspection form" [level=2] [ref=f2e74]
+        - paragraph [ref=f2e75]: Drop the eval form (PDF or photo) here, or browse to upload.
+        - generic [ref=f2e76] [cursor=pointer]:
+          - button "Drop PDF or image, or click to browse" [ref=f2e77]
+          - generic [ref=f2e78]: Drop PDF or image, or click to browse
+        - generic [ref=f2e79]: No inspection form uploaded
+      - button "Analyze probe" [ref=f2e81] [cursor=pointer]

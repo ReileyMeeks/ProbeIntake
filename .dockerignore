@@ -1,0 +1,14 @@
+# Keep the build context small and reproducible.
+**/node_modules
+**/.build
+**/.svelte-kit
+app/build
+.git
+.env
+.env.*
+*.log
+.DS_Store
+.superpowers
+docs
+FormImages
+avante_probe_intake_FINAL*.html

@@ -1,0 +1,9 @@
+- banner [ref=e3]:
+  - generic [ref=e4]:
+    - img "Avante Health Solutions" [ref=e6]
+    - generic [ref=e7]:
+      - generic [ref=e8]: avante
+      - generic [ref=e10]: probe intake
+  - generic [ref=e12]:
+    - generic [ref=e13]: ●
+    - text: ready

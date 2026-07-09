@@ -1,0 +1,555 @@
+/*
+ * "Bench Instrument" design tokens — see
+ * docs/superpowers/specs/2026-07-09-bench-instrument-design.md
+ *
+ * Light, precision-tool workspace. Replaces the previous navy-header /
+ * "Liquid Glass" template CSS (dark theme, workflow bar, colored icon
+ * squares) with a quiet instrument-panel look: hairlines, whitespace,
+ * mono accents. The ProbeSchematic is the only bold element — everything
+ * here stays deliberately calm.
+ */
+
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+:root {
+	--bg: #f7f8fa;
+	--surface: #ffffff;
+	--surface-2: #fbfcfd;
+	--ink: #0e1626;
+	--ink-2: #46536b;
+	--ink-3: #8a97ac;
+	--line: #e4e8ef;
+	--line-2: #d0d6e0;
+	--accent: #1b4dff;
+	--accent-ink: #143bcc;
+	--accent-wash: rgba(27, 77, 255, 0.06);
+	/* severity signal system (findings) */
+	--sev-major: #e5484d;
+	--sev-moderate: #f5a524;
+	--sev-minor: #8a97ac;
+	--sev-pass: #30a46c;
+	--sev-flag: #1b4dff;
+	--r-sm: 6px;
+	--r: 10px;
+	--r-lg: 14px;
+	--shadow: 0 1px 2px rgba(14, 22, 38, 0.04), 0 1px 3px rgba(14, 22, 38, 0.06);
+
+	--font-sans:
+		'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+	--font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html,
+body {
+	background: var(--bg);
+}
+
+body {
+	font-family: var(--font-sans);
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--ink);
+}
+
+.mono {
+	font-family: var(--font-mono);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: var(--r-sm);
+}
+
+/* ── Top strip ─────────────────────────────────────────────────────── */
+
+.strip {
+	height: 48px;
+	min-height: 48px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--line);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 0 20px;
+	position: sticky;
+	top: 0;
+	z-index: 200;
+	flex-wrap: wrap;
+}
+
+.strip-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.strip-logo {
+	width: 22px;
+	height: 22px;
+	border-radius: 5px;
+	overflow: hidden;
+	flex-shrink: 0;
+	display: block;
+}
+
+.strip-logo img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.strip-word {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+}
+
+.strip-avante {
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.strip-sep {
+	width: 1px;
+	height: 12px;
+	background: var(--line-2);
+}
+
+.strip-app {
+	color: var(--ink-3);
+}
+
+.strip-right {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.status-chip {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+
+.status-dot {
+	font-size: 12px;
+	line-height: 1;
+	color: var(--ink-3);
+}
+
+.status-chip.ready .status-dot {
+	color: var(--sev-pass);
+}
+
+.status-chip.analyzing .status-dot {
+	color: var(--accent);
+}
+
+.strip-wo {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+
+/* ── Workspace ─────────────────────────────────────────────────────── */
+/*
+ * Intake and Quote are transitioned views, not side-by-side panes
+ * (Revisions 2, 2026-07-09): intake is a single comfortable column; the
+ * quote view takes the full workspace width once analysis lands.
+ */
+
+.view-intake {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+.view-quote {
+	max-width: 1240px;
+	margin: 0 auto;
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.quote-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.btn-back {
+	height: 32px;
+	padding: 0 16px;
+	border-radius: 999px;
+	border: 1px solid var(--line-2);
+	background: var(--surface);
+	color: var(--ink-2);
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.btn-back:hover:not(:disabled) {
+	background: var(--surface-2);
+	border-color: var(--ink-3);
+}
+
+.btn-back:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Export PDF / Email report — right side of the quote toolbar. */
+.quote-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.email-input {
+	height: 32px;
+	width: 200px;
+	padding: 0 14px;
+	font-size: 12px;
+}
+
+.action-status {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.action-status.sent {
+	color: var(--sev-pass);
+}
+
+.action-status.error {
+	color: var(--sev-major);
+}
+
+/* ── Shared primitives (cards, fields, buttons, pills) ────────────── */
+
+.card {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: var(--r-lg);
+	box-shadow: var(--shadow);
+	overflow: hidden;
+}
+
+.pane-hdr {
+	padding: 14px 16px;
+	border-bottom: 1px solid var(--line);
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.eyebrow {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.pane-body {
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.section-title {
+	font-family: var(--font-sans);
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--ink);
+}
+
+.label {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.field-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.field-wide {
+	grid-column: 1 / -1;
+}
+
+.inp {
+	width: 100%;
+	height: 36px;
+	padding: 0 16px;
+	border: 1px solid var(--line-2);
+	/* Pill by default — single-line text inputs and the "Sign in" / camera
+	   buttons all read as one rounded system (Revisions, 2026-07-09). Selects
+	   and the multi-line notes textarea opt back out below. */
+	border-radius: 999px;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	color: var(--ink);
+	background: var(--surface);
+	outline: none;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
+}
+
+.inp:focus {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.inp::placeholder {
+	color: var(--ink-3);
+}
+
+/* Selects (camera/zone pickers) are not the pill-shaped "text input" the
+   revision targets — keep the original small radius. */
+select.inp {
+	padding: 0 10px;
+	border-radius: var(--r-sm);
+}
+
+textarea.inp {
+	height: auto;
+	min-height: 64px;
+	padding: 10px 14px;
+	border-radius: var(--r-lg);
+	resize: vertical;
+	font-family: var(--font-sans);
+}
+
+.btn {
+	height: 40px;
+	padding: 0 16px;
+	border-radius: 999px;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition:
+		background 0.15s,
+		border-color 0.15s;
+}
+
+.btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.btn-primary {
+	width: 100%;
+	background: var(--accent);
+	color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+	background: var(--accent-ink);
+}
+
+.btn-secondary {
+	background: var(--surface-2);
+	border-color: var(--line-2);
+	color: var(--ink-2);
+}
+
+.btn-secondary:hover:not(:disabled) {
+	background: var(--surface);
+	border-color: var(--ink-3);
+}
+
+.empty-line {
+	font-size: 12px;
+	color: var(--ink-3);
+}
+
+.error-line {
+	font-size: 12px;
+	color: var(--sev-major);
+}
+
+/* Priority pill — quote item priority (Required / Recommended / Optional). */
+.pill-priority {
+	display: inline-flex;
+	align-items: center;
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	padding: 2px 8px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.pill-priority.required {
+	background: var(--accent-wash);
+	color: var(--accent);
+}
+
+.pill-priority.recommended {
+	background: var(--surface-2);
+	color: var(--ink-2);
+}
+
+.pill-priority.optional {
+	color: var(--ink-3);
+}
+
+/* Findings row */
+.finding-row {
+	display: flex;
+	gap: 10px;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.finding-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.sev-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	margin-top: 5px;
+}
+
+.sev-dot.major {
+	background: var(--sev-major);
+}
+
+.sev-dot.moderate {
+	background: var(--sev-moderate);
+}
+
+.sev-dot.minor {
+	background: var(--sev-minor);
+}
+
+.sev-dot.pass {
+	background: var(--sev-pass);
+}
+
+.sev-dot.flag {
+	background: var(--sev-flag);
+}
+
+.finding-body {
+	flex: 1;
+	min-width: 0;
+}
+
+.finding-hdr {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.finding-zone {
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--ink);
+}
+
+.finding-source {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	color: var(--ink-3);
+	background: var(--surface-2);
+	border: 1px solid var(--line);
+	padding: 1px 6px;
+	border-radius: 4px;
+}
+
+.finding-desc {
+	font-size: 12px;
+	color: var(--ink-2);
+	margin-top: 2px;
+}
+
+/* Quote item row */
+.quote-row {
+	padding: 10px 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.quote-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.quote-hdr {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.quote-item {
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--ink);
+}
+
+.quote-rationale {
+	font-size: 12px;
+	color: var(--ink-2);
+	margin-top: 2px;
+}
+
+@media print {
+	.strip {
+		display: none !important;
+	}
+}
