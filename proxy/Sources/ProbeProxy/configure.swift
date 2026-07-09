@@ -4,6 +4,8 @@ import Vapor
 public func configure(_ app: Application) async throws {
     configureAiClient(app)
     configureGraphEmail(app)
+    // Raise max body size to 64mb to accept multi-megabyte image payloads
+    app.routes.defaultMaxBodySize = "64mb"
     // Memory driver: single-instance deployment, no external session store.
     app.middleware.use(app.sessions.middleware)
     try routes(app)

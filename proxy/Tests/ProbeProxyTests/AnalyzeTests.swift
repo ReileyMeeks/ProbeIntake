@@ -69,6 +69,31 @@ import NIOCore
             }
         }
     }
+
+    @Test func analyze_accepts_large_payloads_beyond_default_16kb_limit() async throws {
+        try await withApp(configure: configure) { app in
+            // Verify that the max body size limit has been raised from default 16kb.
+            // A large base64 image payload (~200KB) should reach the controller and return 200,
+            // not be rejected by Vapor with 413 Payload Too Large.
+            app.aiClient = makeStubAiClient(app, returning:
+                #"{"content":[{"type":"text","text":"{\"findings\":[],\"quoteItems\":[],\"confidence\":85}"}]}"#)
+
+            let cookie = try await sessionCookie(app)
+            let largeBase64 = String(repeating: "QUJD", count: 50_000)
+            let payload = AnalyzeRequest(
+                meta: ["model": "C1-6"],
+                images: [ImageInput(mediaType: "image/jpeg", base64: largeBase64, isForm: false)]
+            )
+
+            try await app.testing().test(.POST, "api/analyze", beforeRequest: { req in
+                req.headers.replaceOrAdd(name: .cookie, value: cookie)
+                try req.content.encode(payload)
+            }) { res async in
+                #expect(res.status == .ok, "Large payload (200KB+) should be accepted, not rejected with 413")
+                #expect(res.body.string.contains("\"confidence\""))
+            }
+        }
+    }
 }
 
 /// Builds an `AiClient` backed by a stub `Client` that always returns
