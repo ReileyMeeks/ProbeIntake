@@ -40,6 +40,29 @@ import NIOCore
             }
         }
     }
+
+    @Test func analyze_handles_reversed_braces_without_crashing() async throws {
+        try await withApp(configure: configure) { app in
+            // Model returns text where closing brace precedes opening brace.
+            // This would have caused a fatal Range error before the fix.
+            let malformedText = "} sorry, no json here {"
+            app.aiClient = makeStubAiClient(app, returning:
+                #"{"content":[{"type":"text","text":"\#(malformedText)"}]}"#)
+
+            let payload = AnalyzeRequest(
+                meta: ["model": "C1-6"],
+                images: [ImageInput(mediaType: "image/jpeg", base64: "QUJD", isForm: false)]
+            )
+
+            try await app.testing().test(.POST, "api/analyze", beforeRequest: { req in
+                try req.content.encode(payload)
+            }) { res async in
+                #expect(res.status == .ok)
+                // Confirms slice was not applied; malformed text echoed back unchanged
+                #expect(res.body.string == malformedText)
+            }
+        }
+    }
 }
 
 /// Builds an `AiClient` backed by a stub `Client` that always returns

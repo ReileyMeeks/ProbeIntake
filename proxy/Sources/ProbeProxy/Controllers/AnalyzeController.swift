@@ -28,13 +28,14 @@ struct AnalyzeController {
                                          systemBase: ProbePrompt.system, userContent: content)
             // Same {...} slice the HTML did, so downstream parsing is unchanged.
             var raw = resp.text
-            if let s = raw.firstIndex(of: "{"), let e = raw.lastIndex(of: "}") { raw = String(raw[s...e]) }
+            if let s = raw.firstIndex(of: "{"), let e = raw.lastIndex(of: "}"), s <= e { raw = String(raw[s...e]) }
             let body = Response.Body(string: raw)
             return Response(status: .ok, headers: ["content-type": "application/json"], body: body)
         } catch let AiError.rateLimited(retryAfter) {
             throw Abort(.tooManyRequests, reason: "Rate limited\(retryAfter.map { "; retry after \($0)s" } ?? "")")
         } catch {
-            return errorJSON(status: .badGateway, message: "\(error)")
+            req.logger.error("analyze failed: \(error)")
+            return errorJSON(status: .badGateway, message: "Upstream model request failed")
         }
     }
 
