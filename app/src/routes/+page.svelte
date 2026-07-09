@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { AnalyzeResult, CapturedImage, ProbeMeta } from '$lib/domain/probe';
-	import { postAnalyze, postEmail } from '$lib/api/client';
+	import { postAnalyze, postEmail, extractForm } from '$lib/api/client';
 	import { intakeStatus } from '$lib/domain/status.svelte';
 	import IntakeForm from '$lib/forms/IntakeForm.svelte';
 	import CapturePanel from '$lib/forms/CapturePanel.svelte';
@@ -24,6 +24,48 @@
 	$effect(() => {
 		intakeStatus.status = analyzing ? 'analyzing' : 'ready';
 		intakeStatus.woNumber = meta.so ?? '';
+	});
+
+	// ── Auto-fill intake metadata from the uploaded inspection form ──────
+	// Fires whenever the set of isForm images changes (new upload, page
+	// added/removed). Best-effort: extractForm() never throws, and a field
+	// already typed by the tech is never overwritten.
+	const PREFILL_KEYS = ['model', 'sn', 'ref', 'mfg', 'so', 'customer'] as const;
+	let formPrefillStatus = $state<'idle' | 'pending' | 'done'>('idle');
+	// Plain (non-reactive) — only needs to survive across effect runs, not
+	// trigger them; tracking it as $state would make the effect depend on
+	// its own write and re-run an extra time for no benefit.
+	let lastFormSignature = '';
+
+	function formSignature(imgs: CapturedImage[]): string {
+		return imgs.map((i) => `${i.base64.length}:${i.base64.slice(0, 24)}`).join('|');
+	}
+
+	async function runFormExtraction(imgs: CapturedImage[]) {
+		formPrefillStatus = 'pending';
+		const fields = await extractForm(imgs.map(({ mediaType, base64 }) => ({ mediaType, base64 })));
+		let applied = false;
+		for (const key of PREFILL_KEYS) {
+			const value = fields[key];
+			if (value && !meta[key]) {
+				meta[key] = value;
+				applied = true;
+			}
+		}
+		formPrefillStatus = applied ? 'done' : 'idle';
+	}
+
+	$effect(() => {
+		const formImages = images.filter((img) => img.isForm);
+		if (formImages.length === 0) {
+			lastFormSignature = '';
+			formPrefillStatus = 'idle';
+			return;
+		}
+		const sig = formSignature(formImages);
+		if (sig === lastFormSignature) return;
+		lastFormSignature = sig;
+		void runFormExtraction(formImages);
 	});
 
 	const reduceMotion =
@@ -208,7 +250,7 @@
 				<h1 class="eyebrow">Intake</h1>
 			</div>
 			<div class="pane-body">
-				<IntakeForm bind:meta />
+				<IntakeForm bind:meta formStatus={formPrefillStatus} />
 				<CapturePanel bind:images />
 				<InspectionForm bind:images />
 

@@ -11,11 +11,21 @@
 		{ key: 'customer', label: 'Customer', placeholder: 'Customer name' }
 	];
 
-	let { meta = $bindable<ProbeMeta>({}) }: { meta?: ProbeMeta } = $props();
+	let {
+		meta = $bindable<ProbeMeta>({}),
+		formStatus = 'idle'
+	}: { meta?: ProbeMeta; formStatus?: 'idle' | 'pending' | 'done' } = $props();
 </script>
 
 <div class="identification">
-	<h2 class="eyebrow">Probe identification</h2>
+	<div class="id-hdr">
+		<h2 class="eyebrow">Probe identification</h2>
+		{#if formStatus === 'pending'}
+			<span class="form-status mono">Reading form…</span>
+		{:else if formStatus === 'done'}
+			<span class="form-status mono">Prefilled from form — review</span>
+		{/if}
+	</div>
 	<div class="field-grid">
 		{#each FIELDS as f (f.key)}
 			<div class="field">
@@ -40,5 +50,17 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+	}
+
+	.id-hdr {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.form-status {
+		font-size: 11px;
+		color: var(--ink-3);
 	}
 </style>

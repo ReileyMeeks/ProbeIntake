@@ -9,6 +9,7 @@ func routes(_ app: Application) throws {
 
     let gated = api.grouped(AuthGate())
     gated.post("analyze", use: AnalyzeController().analyze)
+    gated.post("extract", use: ExtractController().extract)
     gated.post("email", use: EmailController().send)
     gated.get("session") { _ in ["authed": true] }
 

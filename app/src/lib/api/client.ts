@@ -51,6 +51,24 @@ export async function postAnalyze(req: {
 	return res.json();
 }
 
+/**
+ * Best-effort inspection-form field extraction for auto-filling intake
+ * metadata. Never throws: analysis still reads the form regardless of
+ * whether extraction succeeds, so a failed/expired-session/malformed
+ * response should just mean "nothing to prefill", not a broken upload flow.
+ */
+export async function extractForm(
+	images: { mediaType: string; base64: string }[]
+): Promise<Record<string, string>> {
+	try {
+		const res = await post('/api/extract', { images });
+		if (!res.ok) return {};
+		return await res.json();
+	} catch {
+		return {};
+	}
+}
+
 export async function postEmail(req: {
 	to: string;
 	subject: string;

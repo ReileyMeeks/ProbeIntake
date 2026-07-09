@@ -11,7 +11,8 @@ vi.mock('$lib/api/client', () => ({
 		confidence: 90,
 		notes: ''
 	})),
-	postEmail: vi.fn(async () => undefined)
+	postEmail: vi.fn(async () => undefined),
+	extractForm: vi.fn(async () => ({}))
 }));
 
 // The email/export flow dynamically imports `$lib/ui/report` (jsPDF) so it
@@ -116,5 +117,60 @@ describe('quote view → email report', () => {
 
 		expect(await screen.findByRole('alert')).toHaveTextContent(/email failed/i);
 		expect(screen.getByRole('button', { name: /email report/i })).toBeInTheDocument();
+	});
+});
+
+describe('intake → form auto-prefill', () => {
+	it('shows a pending note while extracting, then prefills empty fields without clobbering typed input', async () => {
+		const { extractForm } = await import('$lib/api/client');
+		vi.mocked(extractForm).mockClear();
+		// A deferred promise, so the "Reading form…" pending state is
+		// observable instead of racing a same-tick resolution.
+		let resolveExtract!: (fields: Record<string, string>) => void;
+		vi.mocked(extractForm).mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					resolveExtract = resolve;
+				})
+		);
+
+		render(Page);
+
+		const modelInput = screen.getByLabelText(/^model$/i) as HTMLInputElement;
+		await fireEvent.input(modelInput, { target: { value: 'Already typed' } });
+
+		const fileInput = screen.getByTestId('file-input-form') as HTMLInputElement;
+		const file = new File([new Uint8Array([1, 2, 3])], 'evalform.jpg', { type: 'image/jpeg' });
+		await fireEvent.change(fileInput, { target: { files: [file] } });
+
+		expect(await screen.findByText(/reading form/i)).toBeInTheDocument();
+
+		resolveExtract({ model: 'C1-6-D', sn: '250840YP6', customer: 'Acme Imaging' });
+		await screen.findByText(/prefilled from form/i);
+
+		expect(modelInput.value).toBe('Already typed'); // not clobbered
+		expect((screen.getByLabelText(/serial number/i) as HTMLInputElement).value).toBe('250840YP6');
+		expect((screen.getByLabelText(/^customer$/i) as HTMLInputElement).value).toBe('Acme Imaging');
+		expect(extractForm).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not re-run extraction for the same set of form images', async () => {
+		const { extractForm } = await import('$lib/api/client');
+		vi.mocked(extractForm).mockClear();
+		vi.mocked(extractForm).mockResolvedValue({ model: 'C1-6-D' });
+
+		render(Page);
+
+		const fileInput = screen.getByTestId('file-input-form') as HTMLInputElement;
+		const file = new File([new Uint8Array([1, 2, 3])], 'evalform.jpg', { type: 'image/jpeg' });
+		await fireEvent.change(fileInput, { target: { files: [file] } });
+
+		await waitFor(() => expect(extractForm).toHaveBeenCalledTimes(1));
+		await screen.findByText(/prefilled from form/i);
+
+		// Re-typing an unrelated field must not re-trigger extraction.
+		await fireEvent.input(screen.getByLabelText(/sales order/i), { target: { value: 'SO-1' } });
+		await new Promise((r) => setTimeout(r, 0));
+		expect(extractForm).toHaveBeenCalledTimes(1);
 	});
 });
